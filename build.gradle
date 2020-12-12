@@ -1,0 +1,87 @@
+/*
+ * Copyright 2020 Markil 3. All rights reserved.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.taskdefs.condition.Os
+
+import java.nio.file.Files
+
+buildscript {
+    repositories {
+        jcenter()
+        google()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.1.0'
+    }
+}
+
+plugins {
+    // Apply the java plugin to add support for Java
+    id "application"
+    id "distribution"
+//    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "edu.sc.seis.launch4j" version "2.4.5"
+    id "edu.sc.seis.macAppBundle" version "2.3.0"
+}
+
+repositories {
+    google()
+    jcenter()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+ext {
+    jme3 = [version: '3.3.2-stable', g: 'org.jmonkeyengine']
+    versionNumber = 3
+}
+
+dependencies {
+    // Logging
+    implementation "org.slf4j:slf4j-api:1.7.15"
+    implementation "org.slf4j:slf4j-simple:1.7.5"
+
+    implementation "${jme3.g}:jme3-core:${jme3.version}"
+    implementation "${jme3.g}:jme3-desktop:${jme3.version}"
+
+    implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
+
+    implementation "org.codehaus.groovy:groovy-all:2.4.5"
+    implementation "com.simsilica:lemur:1.14.0"
+    implementation "com.simsilica:lemur-proto:1.11.0"
+}
+
+// Define the main class for the application
+mainClassName = 'markil3.controller.Main'
+
+
+run {
+    if (project.hasProperty("appArgs")) {
+        args Eval.me(appArgs)
+    }
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": mainClassName,
+                "Class-Path": configurations.runtime.files.collect {
+                    "lib/$it.name"
+                }.join(" "),
+                "Implementation-Title": rootProject.displayName,
+                "Implementation-Version": rootProject.version,
+                "Version-Code": versionNumber
+    }
+}
+
