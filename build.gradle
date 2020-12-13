@@ -27,7 +27,7 @@ plugins {
     // Apply the java plugin to add support for Java
     id "application"
     id "distribution"
-//    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
     id "edu.sc.seis.launch4j" version "2.4.5"
     id "edu.sc.seis.macAppBundle" version "2.3.0"
 }
@@ -37,6 +37,9 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url 'https://jitpack.io' }
+    maven {
+        url  "https://dl.bintray.com/jmonkeyengine/org.jmonkeyengine"
+    }
 }
 
 sourceCompatibility = "1.8"
@@ -55,6 +58,7 @@ dependencies {
 
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-desktop:${jme3.version}"
+    implementation 'org.jmonkeyengine:jme3-testdata:3.3.2-stable'
 
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
 
@@ -83,5 +87,39 @@ jar {
                 "Implementation-Version": rootProject.version,
                 "Version-Code": versionNumber
     }
+}
+
+shadowJar {
+    baseName = rootProject.name
+    classifier = "universal"
+    version = rootProject.version
+    mainClassName = project.mainClassName
+}
+
+launch4j {
+    mainClassName = project.mainClassName
+    outfile = rootProject.name + "-" + project.version + "-windows.exe"
+    copyConfigurable = shadowJar.outputs.files
+    jar = "lib/${shadowJar.archiveName}"
+    bundledJrePath = "jre"
+    //icon = new File(sourceSets.main.resources.srcDirs[0], "icon256.ico")
+}
+
+createExe.doLast({
+    println project.tasks.installDist.outputs.files.getClass()
+    for (file in new File(installDist.outputs.files[0], "lib").listFiles()) {
+        println file
+    }
+})
+
+macAppBundle {
+    mainClassName = project.mainClassName
+    icon = "myIcon.icns"
+    if (Os.isFamily(Os.FAMILY_MAC) && (appStyle == 'Oracle' || appStyle == 'universalJavaApplicationStub')) {
+        bundleJRE = true
+    }
+    javaProperties.put("apple.laf.useScreenMenuBar", "true")
+    backgroundImage = "doc/macbackground.png"
+    jarTask = "shadowJar"
 }
 

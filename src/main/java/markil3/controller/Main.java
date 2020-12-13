@@ -9,10 +9,13 @@
  */
 package markil3.controller;
 
+import com.jme3.app.DebugKeysAppState;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.StatsAppState;
 import com.jme3.input.DefaultJoystickAxis;
 import com.jme3.input.Joystick;
 import com.jme3.input.JoystickAxis;
+import com.jme3.input.JoystickButton;
 import com.jme3.input.JoystickCompatibilityMappings;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -42,6 +45,61 @@ public class Main extends SimpleApplication
 
     public static File GAME_FOLDER;
     public static File CALIBRATION_FILE;
+
+    /**
+     * Triangle on Playstation, Y on Xbox, and X on Nintendo.
+     */
+    public static final String ACTION_TOP = JoystickButton.BUTTON_0;
+    /**
+     * Circle on Playstation, B on Xbox, and A on Nintendo.
+     */
+    public static final String ACTION_RIGHT = JoystickButton.BUTTON_1;
+    /**
+     * X on Playstation, A on Xbox, and B on Nintendo.
+     */
+    public static final String ACTION_BOTTOM = JoystickButton.BUTTON_2;
+    /**
+     * Square on Playstation, X on Xbox, and Y on Nintendo.
+     */
+    public static final String ACTION_LEFT = JoystickButton.BUTTON_3;
+    public static final String L1 = JoystickButton.BUTTON_4;
+    public static final String R1 = JoystickButton.BUTTON_5;
+    /**
+     * Some gamepads (Xbox controllers notable) will use
+     * {@link JoystickAxis#LEFT_TRIGGER} instead.
+     */
+    public static final String L2 = JoystickButton.BUTTON_6;
+    /**
+     * Some gamepads (Xbox controllers notable) will use
+     * {@link JoystickAxis#RIGHT_TRIGGER} instead.
+     */
+    public static final String R2 = JoystickButton.BUTTON_7;
+    public static final String SELECT = JoystickButton.BUTTON_8;
+    public static final String START = JoystickButton.BUTTON_9;
+    /**
+     * Pressing the left analog stick.
+     */
+    public static final String L3 = JoystickButton.BUTTON_10;
+    /**
+     * Pressing the right analog stick.
+     */
+    public static final String R3 = JoystickButton.BUTTON_11;
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_X} instead.
+     */
+    public static final String DPAD_LEFT = "12";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_X} instead.
+     */
+    public static final String DPAD_RIGHT = "13";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_Y} instead.
+     */
+    public static final String DPAD_UP = "14";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_Y} instead.
+     */
+    public static final String DPAD_DOWN = "15";
 
     private static void initializeJoystickMappings()
     {
@@ -199,6 +257,11 @@ public class Main extends SimpleApplication
         }
     }
 
+    public Main()
+    {
+        super(new StatsAppState(), new DebugKeysAppState());
+    }
+
     @Override
     public void initialize()
     {
@@ -243,5 +306,7 @@ public class Main extends SimpleApplication
 //        to blue
         geom.setMaterial(mat); // set the cube's material
         rootNode.attachChild(geom); // make the cube appear in the scene
+
+        this.getStateManager().attach(new JoystickPreviewScreen());
     }
 }
