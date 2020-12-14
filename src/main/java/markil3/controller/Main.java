@@ -97,12 +97,12 @@ public class Main extends SimpleApplication
 
     public Main()
     {
-        super(new StatsAppState(), new DebugKeysAppState());
+        super(new StatsAppState(), new DebugKeysAppState(), new JoystickPreviewScreen());
     }
 
     @Override
     public void simpleInitApp()
     {
-        this.getStateManager().attach(new JoystickPreviewScreen());
+
     }
 }

@@ -58,7 +58,7 @@ dependencies {
 
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-desktop:${jme3.version}"
-    implementation 'org.jmonkeyengine:jme3-testdata:3.3.2-stable'
+    implementation "${jme3.g}:jme3-testdata:${jme3.version}"
 
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
 }

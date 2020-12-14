@@ -63,6 +63,15 @@ import static markil3.controller.Main.SELECT;
 import static markil3.controller.Main.START;
 
 /**
+ * Adding this app state will display a GUI screen showing the controllers
+ * connected and information on what buttons are pressed. It is primarily
+ * useful for debugging controllers.
+ * <p>Note that this class relies on three textures not found in the default
+ * JME core: "Interface/Joystick/gamepad-buttons.png",
+ * "Interface/Joystick/gamepad-frame.png," and
+ * "Interface/Joystick/gamepad-stick.png." These textures can be obtained
+ * from the org.jmonkeyengine:jme3-testdata library.</p>
+ *
  * @author Markil 3
  * @author Normen Hansen
  * @author Kirill Vainer
@@ -76,6 +85,10 @@ public class JoystickPreviewScreen extends BaseAppState
     private static final org.slf4j.Logger logger =
             org.slf4j.LoggerFactory.getLogger(JoystickPreviewScreen.class);
 
+    /**
+     * This node serves as the center of logic for each gamepad connected to
+     * the computer.
+     */
     static class GamepadView extends Node
     {
 
@@ -179,9 +192,8 @@ public class JoystickPreviewScreen extends BaseAppState
         private void addButton(String name, float x, float y, float width,
                                float height)
         {
-            ButtonView b =
-                    new ButtonView(this.prevScreen, this.assetManager, name, x,
-                            y, width, height);
+            ButtonView b = new ButtonView(this.assetManager, name, x, y, width,
+                    height);
             attachChild(b);
             buttons.put(name, b);
         }
@@ -431,41 +443,39 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
+    /**
+     * Applied to the buttons to highlight which ones are being pressed.
+     */
     static class ButtonView extends Node
     {
-
-        private final JoystickPreviewScreen prevScreen;
+        private static final ColorRGBA hilite =
+                new ColorRGBA(0.0f, 0.75f, 0.75f, 0.5f);
         private int state = 0;
         private Material material;
-        private ColorRGBA hilite = new ColorRGBA(0.0f, 0.75f, 0.75f, 0.5f);
 
         ButtonView(AssetManager assetManager, String name, float x, float y,
                    float width, float height)
         {
-            this(null, assetManager, name, x, y, width, height);
-        }
-
-        ButtonView(JoystickPreviewScreen prevScreen, AssetManager assetManager,
-                   String name, float x, float y, float width, float height)
-        {
             super("Button:" + name);
             setLocalTranslation(x, y, -0.5f);
 
-            this.prevScreen = prevScreen;
-
-            material = new Material(assetManager,
+            this.material = new Material(assetManager,
                     "Common/MatDefs/Misc/Unshaded.j3md");
-            material.setColor("Color", hilite);
-            material.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+            this.material.setColor("Color", hilite);
+            this.material.getAdditionalRenderState()
+                    .setBlendMode(BlendMode.Alpha);
 
             Geometry g = new Geometry("highlight", new Quad(width, height));
-            g.setMaterial(material);
+            g.setMaterial(this.material);
             g.setUserData("view", this);
             attachChild(g);
 
             resetState();
         }
 
+        /**
+         * Updates the visual of whether the button is pressed or not.
+         */
         private void resetState()
         {
             if (state <= 0)
@@ -480,17 +490,30 @@ public class JoystickPreviewScreen extends BaseAppState
             //			System.out.println(getName() + " state:" + state);
         }
 
+        /**
+         * Checks to see if the visual displays if the button is pressed.
+         * @return True if the visual displays that the button is pressed,
+         * false otherwise.
+         */
         public boolean isDown()
         {
             return this.state > 0;
         }
 
+        /**
+         * Updates the button to display that it is pressed.
+         * @see #up()
+         */
         public void down()
         {
             this.state++;
             this.resetState();
         }
 
+        /**
+         * Updates the button to display that it is not pressed.
+         * @see #down()
+         */
         public void up()
         {
             this.state--;
@@ -501,6 +524,7 @@ public class JoystickPreviewScreen extends BaseAppState
     final ColorRGBA BUTTON_COLOR = new ColorRGBA(0F, 0.1F, 0F, 1F);
     final ColorRGBA HIGHLIGHTED_BUTTON_COLOR =
             new ColorRGBA(0F, 0.75F, 0.25F, 1F);
+
     protected Node gui;
     private BitmapFont guiFont;
 
@@ -515,21 +539,10 @@ public class JoystickPreviewScreen extends BaseAppState
 
     private Map<JoystickAxis, Float> lastValues = new HashMap<>();
 
-    /**
-     *
-     */
-    public JoystickPreviewScreen()
-    {
-        this.gui = new Node();
-//        this.gui.setLayout(
-//                new CenterAlignLayout(HAlignment.Center, VAlignment.Center,
-//                        FillMode.None, FillMode.None));
-
-    }
-
     @Override
     public void initialize(Application app)
     {
+        this.gui = new Node();
         this.guiFont =
                 app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
         this.refLabel = this.guiFont.createLabel("Axis X/Axis Y");
@@ -537,8 +550,6 @@ public class JoystickPreviewScreen extends BaseAppState
 
         this.updateGamepad();
 
-        //		this.initNavState();
-        //		this.setFocus(this.playButton);
         this.setEnabled(true);
 
         ((SimpleApplication) this.getApplication()).getGuiNode()
@@ -550,12 +561,18 @@ public class JoystickPreviewScreen extends BaseAppState
         this.setEnabled(true);
     }
 
+    /**
+     * Adds all the GUI elements to the screen.
+     */
     private void updateGamepad()
     {
         int mostButtons = 0;
         Joystick joy;
         int l = this.getApplication().getInputManager().getJoysticks().length;
 
+        /*
+         * Removes any existing gamepads.
+         */
         if (this.gamepadCont != null)
         {
             for (Node cont : this.gamepadCont)
@@ -566,6 +583,11 @@ public class JoystickPreviewScreen extends BaseAppState
                 }
             }
         }
+
+        /*
+         * Removes the labels, just in case something changed and the
+         * previous ones are incompatible.
+         */
         if (this.labels != null)
         {
             for (BitmapText[] cont : this.labels)
@@ -579,6 +601,9 @@ public class JoystickPreviewScreen extends BaseAppState
                 }
             }
         }
+        /*
+         * Initialize the array of labels and gamepads.
+         */
         for (int i = 0; i < l; i++)
         {
             joy = this.getApplication().getInputManager().getJoysticks()[i];
@@ -591,6 +616,7 @@ public class JoystickPreviewScreen extends BaseAppState
         this.gamepadView =
                 new GamepadView[this.getApplication().getInputManager()
                         .getJoysticks().length];
+
         for (int i = 0; i < l; i++)
         {
             this.gamepadCont[i] = new Node();
@@ -603,15 +629,24 @@ public class JoystickPreviewScreen extends BaseAppState
                 this.gui.attachChild(this.gamepadCont[i]);
             }
         }
+
         this.addButtons();
     }
 
+    /**
+     * Adds the tab buttons used to switch between which gamepad is currently
+     * being viewed.
+     */
     private void addButtons()
     {
         Node button;
         BitmapText buttonText;
         Geometry buttonBackground;
         int i, l;
+
+        /*
+         * Clears out any old tab buttons.
+         */
         if (this.gamepadHeaders != null)
         {
             for (i = 0, l = this.gamepadHeaders.length; i < l; i++)
@@ -619,6 +654,7 @@ public class JoystickPreviewScreen extends BaseAppState
                 this.gamepadHeaders[i].removeFromParent();
             }
         }
+
         l = this.gamepadCont.length;
         this.gamepadHeaders = new Node[l];
         for (i = 0, l = this.gamepadCont.length; i < l; i++)
@@ -653,6 +689,11 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
+    /**
+     * Obtain the size of the screen based on the game camera.
+     * @return The screen size in a two-dimensional float vector. Note that
+     * the numbers will always be integers.
+     */
     private Vector2f getScreenSize()
     {
         return new Vector2f(this.getApplication().getCamera().getWidth(),
@@ -662,7 +703,7 @@ public class JoystickPreviewScreen extends BaseAppState
     @Override
     protected void cleanup(Application app)
     {
-
+        this.gui.removeFromParent();
     }
 
     @Override
@@ -681,8 +722,16 @@ public class JoystickPreviewScreen extends BaseAppState
                 .removeJoystickConnectionListener(this);
     }
 
+    /**
+     * Updates the values of the gamepad labels as buttons and axis are
+     * manipulated.
+     * @param joy - The gamepad to update.
+     */
     private void setLabels(Joystick joy)
     {
+        /*
+         * Removes the old labels.
+         */
         if (labels != null)
         {
             for (BitmapText label : this.labels[joy.getJoyId()])
@@ -697,31 +746,50 @@ public class JoystickPreviewScreen extends BaseAppState
         //		joy.getButtonCount()) * 2 + 1];
         if (this.labels != null)
         {
+            /*
+             * The name of the gamepad.
+             */
             this.labels[joy.getJoyId()][0] =
                     this.guiFont.createLabel(joy.getName());
             this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][0]);
+            /*
+             * The key for the axis. Each of the axis rows will display the
+             * index of the axis, its given name, its logical ID after
+             * joystick remapping has occurred, and the axis index again.
+             */
             this.labels[joy.getJoyId()][1] = this.guiFont
                     .createLabel("Axis Index: Axis Name (logical ID, axis ID)");
             this.labels[joy.getJoyId()][1].setLocalTranslation(20, -50, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][1]);
+            /*
+             * Loop through all the axes.
+             */
             for (int i = 0; i < joy.getAxisCount(); i++)
             {
                 JoystickAxis axis = joy.getAxes().get(i);
                 try
                 {
+                    /*
+                     * The name and information of the axis.
+                     */
                     BitmapText label = this.guiFont.createLabel(
                             (i) + ": " + axis.getName() + " (" +
                                     axis.getLogicalId() + ", " +
                                     axis.getAxisId() + "): ");
                     label.setLocalTranslation(20, -25 * (i + 3), 0);
                     this.labels[joy.getJoyId()][i * 2 + 1] = label;
+
+                    /*
+                     * The current value of the axis.
+                     */
                     BitmapText label2 = this.guiFont.createLabel("-1.0");
                     label2.setLocalTranslation(label.getLocalTranslation()
                             .add(label.getLineWidth(), 0, 0));
                     this.labels[joy.getJoyId()][i * 2 + 2] = label2;
+
                     this.gamepadCont[joy.getJoyId()].attachChild(label);
                     this.gamepadCont[joy.getJoyId()].attachChild(label2);
                 }
@@ -738,7 +806,14 @@ public class JoystickPreviewScreen extends BaseAppState
 //                            axis.getAxisId() + ")", aie);
                 }
             }
+
             int firstButtonIndex = 2 * joy.getAxisCount() + 1;
+            /*
+             * The key for the buttons. Each of the button rows will display the
+             * index of the button offset by the number of axes we had, its
+             * given name, its logical ID after
+             * joystick remapping has occurred, and the actual button index.
+             */
             this.labels[joy.getJoyId()][firstButtonIndex] = this.guiFont
                     .createLabel(
                             "Button Index: Button Name (logical ID, button " +
@@ -749,25 +824,40 @@ public class JoystickPreviewScreen extends BaseAppState
                                     .getLineWidth(), -50, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][firstButtonIndex]);
+
+            /*
+             * Loop through all the buttons.
+             */
             for (int i = 0; i < joy.getButtonCount(); i++)
             {
                 JoystickButton button = joy.getButtons().get(i);
                 try
                 {
+                    /*
+                     * The current value of the button. We create this first
+                     since the name will be placed in relation to this, due
+                     to it being right-justified.
+                     */
                     BitmapText label2 = this.guiFont.createLabel("false");
                     label2.setLocalTranslation(
                             this.getScreenSize().x - label2.getLineWidth(),
                             -25 * (i + 3), 0);
+
+                    /*
+                     * The name and information for the button.
+                     */
                     BitmapText label = this.guiFont.createLabel(
                             (i + joy.getAxisCount()) + ": " + button.getName() +
                                     " (" + button.getLogicalId() + ", " +
                                     button.getButtonId() + "): ");
                     label.setLocalTranslation(label2.getLocalTranslation()
                             .add(-label.getLineWidth(), 0, 0));
+
                     this.labels[joy.getJoyId()][2 * (i + joy.getAxisCount()) +
                             2] = label;
                     this.labels[joy.getJoyId()][2 * (i + joy.getAxisCount()) +
                             3] = label2;
+
                     this.gamepadCont[joy.getJoyId()].attachChild(label);
                     this.gamepadCont[joy.getJoyId()].attachChild(label2);
                 }
@@ -786,6 +876,11 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
+    /**
+     * Repositions the screen elements.
+     * @param width - The width of the screen.
+     * @param height - The height of the screen.
+     */
     public void resize(int width, int height)
     {
         this.gui.setLocalTranslation(0, this.getScreenSize().y, 0);
@@ -859,6 +954,12 @@ public class JoystickPreviewScreen extends BaseAppState
     {
     }
 
+    /**
+     * A convenience method to discover what the mouse is currently over.
+     * @param x - The current X coordinate of the mouse.
+     * @param y - The current Y coordinate of the mouse.
+     * @return Collision results on the GUI.
+     */
     private CollisionResults checkMouse(int x, int y)
     {
         CollisionResults results = new CollisionResults();
@@ -867,6 +968,11 @@ public class JoystickPreviewScreen extends BaseAppState
         return results;
     }
 
+    /**
+     * Displays which button is which as the user hovers over the button.
+     * TODO - Doesn't trigger.
+     * @param evt - Input event data.
+     */
     @Override
     public void onMouseMotionEvent(MouseMotionEvent evt)
     {
@@ -890,10 +996,8 @@ public class JoystickPreviewScreen extends BaseAppState
         if (button != null)
         {
             this.refLabel.setText(button.getName().substring(8));
-            this.resize(
-                    this.getApplication().getViewPort().getCamera().getWidth(),
-                    this.getApplication().getViewPort().getCamera()
-                            .getHeight());
+            Vector2f size = this.getScreenSize();
+            this.resize((int) size.x, (int) size.y);
         }
         else
         {
@@ -904,6 +1008,10 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
+    /**
+     * Triggers the gamepad tab buttons.
+     * @param evt - Input event data.
+     */
     @Override
     public void onMouseButtonEvent(MouseButtonEvent evt)
     {
@@ -955,26 +1063,22 @@ public class JoystickPreviewScreen extends BaseAppState
     @Override
     public void onConnected(Joystick joystick)
     {
+        Vector2f size = this.getScreenSize();
         this.updateGamepad();
-        this.resize(((SimpleApplication) this.getApplication()).getCamera()
-                        .getWidth(),
-                ((SimpleApplication) this.getApplication()).getCamera()
-                        .getHeight());
+        this.resize((int) size.x, (int) size.y);
     }
 
     @Override
     public void onDisconnected(Joystick joystick)
     {
-        /**
+        Vector2f size = this.getScreenSize();
+        /*
          * TODO - This callback will fire before the joystick is actually
          *  removed. This is helpful at times, but it does mean we will have a
          *  blank slot because this code still thinks we have the one that was
          *  removed.
          */
         this.updateGamepad();
-        this.resize(((SimpleApplication) this.getApplication()).getCamera()
-                        .getWidth(),
-                ((SimpleApplication) this.getApplication()).getCamera()
-                        .getHeight());
+        this.resize((int) size.x, (int) size.y);
     }
 }
