@@ -1,5 +1,5 @@
 # JMEControllerConfig
-A simple application for JMonkeyEngine-based games that allow for the inclusion of a gamepad view to monitor how exactly the JMonkeyEngine is viewing the gamepad. It can easilly be implemented into any JME3-based application without the need for external dependencies.
+Derived from jMonkeyEngine's TestJoypad example, this is a simple utility library for JMonkeyEngine-based games that allow for the inclusion of a gamepad view to monitor how exactly the JMonkeyEngine is viewing the gamepad. It can easilly be implemented into any JME3-based application without the need for external dependencies.
 
 ## Getting started
 Download the [latest release build](https://github.com/Markil3/JMEControllerConfig/releases) and store it in your project's library folder. Point your build tool to use the library. Then, ensure that your jMonkey application's settings (com.jme3.system.AppSettings#setUseJoysticks) are set to enable joypad support After that, just attach the markil3.controller.JoystickPreviewScreen to the jMonkey applications state manager to display the gamepad information. Simply detach the state to remove the information.
