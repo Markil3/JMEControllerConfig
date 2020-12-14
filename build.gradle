@@ -61,10 +61,6 @@ dependencies {
     implementation 'org.jmonkeyengine:jme3-testdata:3.3.2-stable'
 
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
-
-    implementation "org.codehaus.groovy:groovy-all:2.4.5"
-    implementation "com.simsilica:lemur:1.14.0"
-    implementation "com.simsilica:lemur-proto:1.11.0"
 }
 
 // Define the main class for the application
@@ -90,8 +86,8 @@ jar {
 }
 
 shadowJar {
-    baseName = rootProject.name
-    classifier = "universal"
+    baseName rootProject.name
+    classifier "universal"
     version = rootProject.version
     mainClassName = project.mainClassName
 }
@@ -100,7 +96,7 @@ launch4j {
     mainClassName = project.mainClassName
     outfile = rootProject.name + "-" + project.version + "-windows.exe"
     copyConfigurable = shadowJar.outputs.files
-    jar = "lib/${shadowJar.archiveName}"
+    jar = shadowJar.getArchiveFile()
     bundledJrePath = "jre"
     //icon = new File(sourceSets.main.resources.srcDirs[0], "icon256.ico")
 }

@@ -14,6 +14,10 @@ import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.input.Joystick;
 import com.jme3.input.JoystickAxis;
 import com.jme3.input.JoystickButton;
@@ -28,23 +32,12 @@ import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
-import com.simsilica.lemur.Axis;
-import com.simsilica.lemur.Button;
-import com.simsilica.lemur.Command;
-import com.simsilica.lemur.Container;
-import com.simsilica.lemur.FillMode;
-import com.simsilica.lemur.Label;
-import com.simsilica.lemur.TabbedPanel;
-import com.simsilica.lemur.component.BoxLayout;
-import com.simsilica.lemur.event.MouseEventControl;
-import com.simsilica.lemur.event.MouseListener;
-import com.simsilica.lemur.style.ElementId;
 
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +72,6 @@ import static markil3.controller.Main.START;
 public class JoystickPreviewScreen extends BaseAppState
         implements RawInputListener
 {
-    @SuppressWarnings("unused")
     private static final org.slf4j.Logger logger =
             org.slf4j.LoggerFactory.getLogger(JoystickPreviewScreen.class);
 
@@ -467,50 +459,10 @@ public class JoystickPreviewScreen extends BaseAppState
 
             Geometry g = new Geometry("highlight", new Quad(width, height));
             g.setMaterial(material);
+            g.setUserData("view", this);
             attachChild(g);
 
             resetState();
-            addControl(new MouseEventControl(new MouseListener()
-            {
-                @Override
-                public void mouseMoved(MouseMotionEvent event, Spatial target,
-                                       Spatial capture)
-                {
-                }
-
-                @Override
-                public void mouseExited(MouseMotionEvent event, Spatial target,
-                                        Spatial capture)
-                {
-                    if (prevScreen != null)
-                    {
-                        if (prevScreen.refLabel.getText().equals(name))
-                        {
-                            prevScreen.refLabel.setText("");
-                        }
-                    }
-                }
-
-                @Override
-                public void mouseEntered(MouseMotionEvent event, Spatial target,
-                                         Spatial capture)
-                {
-                    if (prevScreen != null)
-                    {
-                        prevScreen.refLabel.setText(name);
-                        prevScreen.resize(prevScreen.getApplication()
-                                        .getViewPort().getCamera().getWidth(),
-                                prevScreen.getApplication().getViewPort()
-                                        .getCamera().getHeight());
-                    }
-                }
-
-                @Override
-                public void mouseButtonEvent(MouseButtonEvent event,
-                                             Spatial target, Spatial capture)
-                {
-                }
-            }));
         }
 
         private void resetState()
@@ -545,18 +497,20 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
-    protected Container gui;
+    final ColorRGBA BUTTON_COLOR = new ColorRGBA(0F, 0.1F, 0F, 1F);
+    final ColorRGBA HIGHLIGHTED_BUTTON_COLOR =
+            new ColorRGBA(0F, 0.75F, 0.25F, 1F);
+    protected Node gui;
+    private BitmapFont guiFont;
 
-    private TabbedPanel choicesCont;
-
-    private Container[] gamepadCont;
+    private Node[] gamepadCont;
 
     private GamepadView[] gamepadView;
+    private Node[] gamepadHeaders;
 
-    private Label[][] labels;
+    private BitmapText[][] labels;
 
-    private Label refLabel =
-            new Label("Axis X/Axis Y", new ElementId("joystick.label"));
+    private BitmapText refLabel;
 
     private Map<JoystickAxis, Float> lastValues = new HashMap<>();
 
@@ -565,15 +519,11 @@ public class JoystickPreviewScreen extends BaseAppState
      */
     public JoystickPreviewScreen()
     {
-        this.gui = new Container();
+        this.gui = new Node();
 //        this.gui.setLayout(
 //                new CenterAlignLayout(HAlignment.Center, VAlignment.Center,
 //                        FillMode.None, FillMode.None));
 
-        this.choicesCont = new TabbedPanel();
-        this.gui.addChild(choicesCont);
-
-        this.gui.attachChild(this.refLabel);
     }
 
     @Override
@@ -583,9 +533,14 @@ public class JoystickPreviewScreen extends BaseAppState
         Joystick joy;
         int l = this.getApplication().getInputManager().getJoysticks().length;
 
+        this.guiFont =
+                app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
+        this.refLabel = this.guiFont.createLabel("Axis X/Axis Y");
+        this.gui.attachChild(this.refLabel);
+
         if (this.gamepadCont != null)
         {
-            for (Container cont : this.gamepadCont)
+            for (Node cont : this.gamepadCont)
             {
                 if (cont != null)
                 {
@@ -599,33 +554,90 @@ public class JoystickPreviewScreen extends BaseAppState
             mostButtons = Math.max(joy.getAxisCount() + joy.getButtonCount(),
                     mostButtons);
         }
-        this.labels = new Label[l][mostButtons * 2 + 3];
-        this.gamepadCont = new Container[this.getApplication().getInputManager()
+        this.labels = new BitmapText[l][mostButtons * 2 + 3];
+        this.gamepadCont = new Node[this.getApplication().getInputManager()
                 .getJoysticks().length];
         this.gamepadView =
                 new GamepadView[this.getApplication().getInputManager()
                         .getJoysticks().length];
         for (int i = 0; i < l; i++)
         {
-            joy = this.getApplication().getInputManager().getJoysticks()[i];
-            this.gamepadCont[i] = new Container();
-            this.gamepadCont[i].setLayout(new BoxLayout(Axis.Y, FillMode.None));
-            choicesCont
-                    .addTab("Gamepad " + joy.getJoyId(), this.gamepadCont[i]);
-            //			this.gamepadCont[i].addChild(new Label(joy.getName()));
-            this.gamepadView[i] = new GamepadView(this, this.getApplication().getAssetManager());
+            this.gamepadCont[i] = new Node();
+            this.gamepadView[i] = new GamepadView(this,
+                    this.getApplication().getAssetManager());
             this.gamepadView[i].setLocalTranslation(-128, -384, 0);
             this.gamepadCont[i].attachChild(this.gamepadView[i]);
+            if (i == 0)
+            {
+                this.gui.attachChild(this.gamepadCont[i]);
+            }
         }
-        choicesCont.addTab("Back", null);
+        this.addButtons();
 
         //		this.initNavState();
         //		this.setFocus(this.playButton);
         this.setEnabled(true);
 
-        ((SimpleApplication) this.getApplication()).getGuiNode().attachChild(this.gui);
-        this.resize(((SimpleApplication) this.getApplication()).getCamera().getWidth(), ((SimpleApplication) this.getApplication()).getCamera().getHeight());
+        ((SimpleApplication) this.getApplication()).getGuiNode()
+                .attachChild(this.gui);
+        this.resize(((SimpleApplication) this.getApplication()).getCamera()
+                        .getWidth(),
+                ((SimpleApplication) this.getApplication()).getCamera()
+                        .getHeight());
         this.setEnabled(true);
+    }
+
+    private void addButtons()
+    {
+        Node button;
+        BitmapText buttonText;
+        Geometry buttonBackground;
+        int i, l;
+        if (this.gamepadHeaders != null)
+        {
+            for (i = 0, l = this.gamepadHeaders.length; i < l; i++)
+            {
+                this.gamepadHeaders[i].removeFromParent();
+            }
+        }
+        l = this.gamepadCont.length;
+        this.gamepadHeaders = new Node[l];
+        for (i = 0, l = this.gamepadCont.length; i < l; i++)
+        {
+            button = new Node();
+            buttonText = this.guiFont.createLabel("Gamepad " +
+                    this.getApplication().getInputManager().getJoysticks()[i]
+                            .getJoyId());
+            buttonText.setUserData("gamepad", i);
+            buttonBackground = new Geometry("gamepad" + i,
+                    new Quad(buttonText.getLineWidth() + 10,
+                            buttonText.getLineHeight() + 5));
+            buttonBackground.setMaterial(
+                    new Material(this.getApplication().getAssetManager(),
+                            "Common/MatDefs/Misc/Unshaded.j3md"));
+            if (this.gamepadCont[i].getParent() != null)
+            {
+                buttonBackground.getMaterial()
+                        .setColor("Color", HIGHLIGHTED_BUTTON_COLOR);
+            }
+            else
+            {
+                buttonBackground.getMaterial().setColor("Color", BUTTON_COLOR);
+            }
+            buttonBackground.setUserData("gamepad", i);
+            buttonBackground
+                    .setLocalTranslation(0, -buttonText.getLineHeight(), 0);
+            button.attachChild(buttonBackground);
+            button.attachChild(buttonText);
+            this.gui.attachChild(button);
+            this.gamepadHeaders[i] = button;
+        }
+    }
+
+    private Vector2f getScreenSize()
+    {
+        return new Vector2f(this.getApplication().getCamera().getWidth(),
+                this.getApplication().getCamera().getHeight());
     }
 
     @Override
@@ -648,10 +660,9 @@ public class JoystickPreviewScreen extends BaseAppState
 
     private void setLabels(Joystick joy)
     {
-        ElementId elId = new ElementId("joystick.label");
         if (labels != null)
         {
-            for (Label label : this.labels[joy.getJoyId()])
+            for (BitmapText label : this.labels[joy.getJoyId()])
             {
                 if (label != null)
                 {
@@ -663,13 +674,14 @@ public class JoystickPreviewScreen extends BaseAppState
         //		joy.getButtonCount()) * 2 + 1];
         if (this.labels != null)
         {
-            this.labels[joy.getJoyId()][0] = new Label(joy.getName(), elId);
+            this.labels[joy.getJoyId()][0] =
+                    this.guiFont.createLabel(joy.getName());
+            this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][0]);
-            this.labels[joy.getJoyId()][1] =
-                    new Label("Axis Index: Axis Name (logical ID, axis ID)",
-                            elId);
-            this.labels[joy.getJoyId()][1].setLocalTranslation(20, -25, 0);
+            this.labels[joy.getJoyId()][1] = this.guiFont
+                    .createLabel("Axis Index: Axis Name (logical ID, axis ID)");
+            this.labels[joy.getJoyId()][1].setLocalTranslation(20, -50, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][1]);
             for (int i = 0; i < joy.getAxisCount(); i++)
@@ -677,14 +689,15 @@ public class JoystickPreviewScreen extends BaseAppState
                 JoystickAxis axis = joy.getAxes().get(i);
                 try
                 {
-                    Label label = new Label((i) + ": " + axis.getName() + " (" +
-                            axis.getLogicalId() + ", " + axis.getAxisId() +
-                            "): ", elId);
-                    label.setLocalTranslation(20, -25 * (i + 2), 0);
+                    BitmapText label = this.guiFont.createLabel(
+                            (i) + ": " + axis.getName() + " (" +
+                                    axis.getLogicalId() + ", " +
+                                    axis.getAxisId() + "): ");
+                    label.setLocalTranslation(20, -25 * (i + 3), 0);
                     this.labels[joy.getJoyId()][i * 2 + 1] = label;
-                    Label label2 = new Label("-1.0", elId);
+                    BitmapText label2 = this.guiFont.createLabel("-1.0");
                     label2.setLocalTranslation(label.getLocalTranslation()
-                            .add(label.getPreferredSize().x, 0, 0));
+                            .add(label.getLineWidth(), 0, 0));
                     this.labels[joy.getJoyId()][i * 2 + 2] = label2;
                     this.gamepadCont[joy.getJoyId()].attachChild(label);
                     this.gamepadCont[joy.getJoyId()].attachChild(label2);
@@ -703,13 +716,14 @@ public class JoystickPreviewScreen extends BaseAppState
                 }
             }
             int firstButtonIndex = 2 * joy.getAxisCount() + 1;
-            this.labels[joy.getJoyId()][firstButtonIndex] = new Label(
-                    "Button Index: Button Name (logical ID, button " + "ID)",
-                    elId);
+            this.labels[joy.getJoyId()][firstButtonIndex] = this.guiFont
+                    .createLabel(
+                            "Button Index: Button Name (logical ID, button " +
+                                    "ID)");
             this.labels[joy.getJoyId()][firstButtonIndex].setLocalTranslation(
-                    this.gui.getPreferredSize().x -
+                    this.getScreenSize().x -
                             this.labels[joy.getJoyId()][firstButtonIndex]
-                                    .getPreferredSize().x, -25, 0);
+                                    .getLineWidth(), -50, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][firstButtonIndex]);
             for (int i = 0; i < joy.getButtonCount(); i++)
@@ -717,15 +731,16 @@ public class JoystickPreviewScreen extends BaseAppState
                 JoystickButton button = joy.getButtons().get(i);
                 try
                 {
-                    Label label2 = new Label("false", elId);
-                    label2.setLocalTranslation(this.gui.getPreferredSize().x -
-                            label2.getPreferredSize().x, -25 * (i + 2), 0);
-                    Label label = new Label(
+                    BitmapText label2 = this.guiFont.createLabel("false");
+                    label2.setLocalTranslation(
+                            this.getScreenSize().x - label2.getLineWidth(),
+                            -25 * (i + 3), 0);
+                    BitmapText label = this.guiFont.createLabel(
                             (i + joy.getAxisCount()) + ": " + button.getName() +
                                     " (" + button.getLogicalId() + ", " +
-                                    button.getButtonId() + "): ", elId);
+                                    button.getButtonId() + "): ");
                     label.setLocalTranslation(label2.getLocalTranslation()
-                            .add(-label.getPreferredSize().x, 0, 0));
+                            .add(-label.getLineWidth(), 0, 0));
                     this.labels[joy.getJoyId()][2 * (i + joy.getAxisCount()) +
                             2] = label;
                     this.labels[joy.getJoyId()][2 * (i + joy.getAxisCount()) +
@@ -750,10 +765,16 @@ public class JoystickPreviewScreen extends BaseAppState
 
     public void resize(int width, int height)
     {
-        this.gui.setPreferredSize(new Vector3f(width, height, 0));
-        this.gui.setLocalTranslation(0, this.gui.getPreferredSize().y, 0);
-        this.choicesCont.setPreferredSize(new Vector3f(width, height, 0));
-        this.choicesCont.setLocalTranslation(width / 2F, height / 2F, 0);
+        this.gui.setLocalTranslation(0, this.getScreenSize().y, 0);
+        if (this.gamepadHeaders != null)
+        {
+            Node button;
+            for (int i = 0, l = this.gamepadHeaders.length; i < l; i++)
+            {
+                button = this.gamepadHeaders[i];
+                button.setLocalTranslation(128 * i, 0, 0);
+            }
+        }
         if (this.gamepadView != null)
         {
             for (GamepadView view : this.gamepadView)
@@ -762,7 +783,7 @@ public class JoystickPreviewScreen extends BaseAppState
             }
         }
         this.refLabel.setLocalTranslation(
-                (width - this.refLabel.getPreferredSize().x) / 2F, 0, 0);
+                (width - this.refLabel.getLineWidth()) / 2F, 0, 0);
     }
 
     @Override
@@ -815,14 +836,87 @@ public class JoystickPreviewScreen extends BaseAppState
     {
     }
 
+    private CollisionResults checkMouse(int x, int y)
+    {
+        CollisionResults results = new CollisionResults();
+        Ray ray = new Ray(new Vector3f(x, y, 0), new Vector3f(x, y, 1));
+        this.gui.collideWith(ray, results);
+        return results;
+    }
+
     @Override
     public void onMouseMotionEvent(MouseMotionEvent evt)
     {
+        ButtonView button = null;
+        CollisionResults results = this.checkMouse(evt.getX(), evt.getY());
+        if (results.size() > 0)
+        {
+            for (CollisionResult result : results)
+            {
+                if (result.getGeometry().getUserData("view") != null)
+                {
+                    if (result.getGeometry()
+                            .getUserData("view") instanceof ButtonView)
+                    {
+                        button = result.getGeometry().getUserData("view");
+                        break;
+                    }
+                }
+            }
+        }
+        if (button != null)
+        {
+            this.refLabel.setText(button.getName().substring(8));
+            this.resize(
+                    this.getApplication().getViewPort().getCamera().getWidth(),
+                    this.getApplication().getViewPort().getCamera()
+                            .getHeight());
+        }
+        else
+        {
+            if (this.refLabel.getText().length() > 0)
+            {
+                this.refLabel.setText("");
+            }
+        }
     }
 
     @Override
     public void onMouseButtonEvent(MouseButtonEvent evt)
     {
+        Integer gamepad;
+        if (evt.isPressed() && evt.getButtonIndex() == 0)
+        {
+            CollisionResults results = this.checkMouse(evt.getX(), evt.getY());
+            if (results.size() > 0)
+            {
+                for (CollisionResult result : results)
+                {
+                    if (result.getGeometry().getUserData("gamepad") != null)
+                    {
+                        gamepad = result.getGeometry().getUserData("gamepad");
+                        for (int i = 0, l = this.gamepadCont.length; i < l; i++)
+                        {
+                            if (i == gamepad)
+                            {
+                                this.gui.attachChild(this.gamepadCont[i]);
+                                ((Geometry) this.gamepadHeaders[i].getChild(0))
+                                        .getMaterial().setColor("Color",
+                                        HIGHLIGHTED_BUTTON_COLOR);
+                            }
+                            else
+                            {
+                                this.gamepadCont[i].removeFromParent();
+                                ((Geometry) this.gamepadHeaders[i].getChild(0))
+                                        .getMaterial()
+                                        .setColor("Color", BUTTON_COLOR);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     @Override

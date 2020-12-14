@@ -23,9 +23,6 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeSystem;
-import com.simsilica.lemur.GuiGlobals;
-import com.simsilica.lemur.focus.FocusNavigationState;
-import com.simsilica.lemur.style.BaseStyles;
 
 import java.io.File;
 import java.io.IOException;
@@ -286,14 +283,6 @@ public class Main extends SimpleApplication
             }
         }
 
-        // Lemur
-        GuiGlobals.initialize(this);
-        GuiGlobals.getInstance().setCursorEventsEnabled(false);
-        this.getStateManager().detach(this.getStateManager()
-                .getState(FocusNavigationState.class));
-        BaseStyles.loadStyleResources("/com/simsilica/lemur/style/base/glass-styles.groovy");
-        BaseStyles.loadGlassStyle();
-        GuiGlobals.getInstance().getStyles().setDefaultStyle("crate");
         Box b = new Box(1F, 1F, 1F); // create cube shape
 //        Sphere b = new Sphere(16, 32, 1F); // create cube shape
         Geometry geom =
