@@ -141,7 +141,7 @@ public class Main extends SimpleApplication
         {
             if (Arrays.binarySearch(args, "--defaultSettings") < 0)
             {
-                settings.load("Minigames");
+                settings.load("JMEControllerConfig");
             }
         }
         catch (BackingStoreException e1)
@@ -150,7 +150,7 @@ public class Main extends SimpleApplication
         }
         finally
         {
-            settings.setTitle("Hide & Crate");
+            settings.setTitle("JMEControllerConfig");
             settings.setUseJoysticks(true);
             settings.setEmulateMouse(false);
             settings.setVSync(true);

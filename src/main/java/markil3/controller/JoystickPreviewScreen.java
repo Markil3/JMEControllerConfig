@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 Markil 3. All rights reserved.
+ * Copyright (c) 2009-2020 jMonkeyEngine. All rights reserved.
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +22,11 @@ import com.jme3.input.event.TouchEvent;
 
 /**
  * @author Markil 3
+ * @author Normen Hansen
+ * @author Kirill Vainer
+ * @author Paul Speed
+ * @author dokthar
+ * @author Stephen Gold
  */
 public class JoystickPreviewScreen extends BaseAppState
         implements RawInputListener
