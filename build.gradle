@@ -24,12 +24,8 @@ buildscript {
 }
 
 plugins {
-    // Apply the java plugin to add support for Java
+    id "java-library"
     id "application"
-    id "distribution"
-    id "com.github.johnrengelman.shadow" version "5.0.0"
-    id "edu.sc.seis.launch4j" version "2.4.5"
-    id "edu.sc.seis.macAppBundle" version "2.3.0"
 }
 
 repositories {
@@ -65,12 +61,12 @@ dependencies {
 
 // Define the main class for the application
 mainClassName = 'markil3.controller.Main'
+version = "1.0"
+versionNumber = 1
 
-
-run {
-    if (project.hasProperty("appArgs")) {
-        args Eval.me(appArgs)
-    }
+java {
+    withSourcesJar()
+    withJavadocJar()
 }
 
 jar {
@@ -84,38 +80,3 @@ jar {
                 "Version-Code": versionNumber
     }
 }
-
-shadowJar {
-    baseName rootProject.name
-    classifier "universal"
-    version = rootProject.version
-    mainClassName = project.mainClassName
-}
-
-launch4j {
-    mainClassName = project.mainClassName
-    outfile = rootProject.name + "-" + project.version + "-windows.exe"
-    copyConfigurable = shadowJar.outputs.files
-    jar = shadowJar.getArchiveFile()
-    bundledJrePath = "jre"
-    //icon = new File(sourceSets.main.resources.srcDirs[0], "icon256.ico")
-}
-
-createExe.doLast({
-    println project.tasks.installDist.outputs.files.getClass()
-    for (file in new File(installDist.outputs.files[0], "lib").listFiles()) {
-        println file
-    }
-})
-
-macAppBundle {
-    mainClassName = project.mainClassName
-    icon = "myIcon.icns"
-    if (Os.isFamily(Os.FAMILY_MAC) && (appStyle == 'Oracle' || appStyle == 'universalJavaApplicationStub')) {
-        bundleJRE = true
-    }
-    javaProperties.put("apple.laf.useScreenMenuBar", "true")
-    backgroundImage = "doc/macbackground.png"
-    jarTask = "shadowJar"
-}
-
