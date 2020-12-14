@@ -24,9 +24,9 @@ Alternatively, you can [download the zip file](https://github.com/Markil3/JMECon
 
 Once downloaded, point the command line to the directory that the source was downloaded and extracted to and run
 
-<code>gradlew build</code>
+<code>gradlew library:build</code>
 
-This will create three .jar files in the build/libs directory, one binary, the second (with the -source suffix) containing the source code, and the final one (with the -javadoc suffix) containing documentation.
+This will create three .jar files in the library/build/libs directory, one binary, the second (with the -source suffix) containing the source code, and the final one (with the -javadoc suffix) containing documentation.
 
 ## Testing
 If you want to test this without implementing it in your software, simply download the source as outlined above and run

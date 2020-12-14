@@ -17,15 +17,14 @@ buildscript {
         jcenter()
         google()
     }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.0'
-    }
 }
 
 plugins {
-    id "java-library"
     id "application"
+    id "distribution"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "edu.sc.seis.launch4j" version "2.4.5"
+    id "edu.sc.seis.macAppBundle" version "2.3.0"
 }
 
 repositories {
@@ -52,10 +51,9 @@ dependencies {
     implementation "org.slf4j:slf4j-api:1.7.15"
     implementation "org.slf4j:slf4j-simple:1.7.5"
 
+    implementation project(':library')
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-desktop:${jme3.version}"
-    implementation "${jme3.g}:jme3-testdata:${jme3.version}"
-
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
 }
 
@@ -64,19 +62,61 @@ mainClassName = 'markil3.controller.Main'
 version = "1.0"
 versionNumber = 1
 
-java {
-    withSourcesJar()
-    withJavadocJar()
+processResources {
+    from (".") {
+        include "LICENSE"
+        include "JME3-LICENSE"
+    }
 }
 
+/*
+ * TODO - The default zipped distributions are a bit of a mess.
+ */
 jar {
+    baseName rootProject.name
+    version rootProject.version
     manifest {
         attributes "Main-Class": mainClassName,
                 "Class-Path": configurations.runtime.files.collect {
                     "lib/$it.name"
                 }.join(" "),
-                "Implementation-Title": rootProject.displayName,
+                "Implementation-Title": rootProject.name,
                 "Implementation-Version": rootProject.version,
                 "Version-Code": versionNumber
     }
 }
+
+shadowJar {
+    archivesBaseName = rootProject.name
+    archiveClassifier = "universal"
+    version = rootProject.version
+    mainClassName = project.mainClassName
+}
+
+launch4j {
+    mainClassName = project.mainClassName
+    outfile = rootProject.name + "-" + project.version + "-windows.exe"
+    copyConfigurable = shadowJar.outputs.files
+    jar = shadowJar.getArchiveFile()
+    bundledJrePath = "jre"
+    //icon = new File(sourceSets.main.resources.srcDirs[0], "icon256.ico")
+}
+
+createExe.doLast({
+    println project.tasks.installDist.outputs.files.getClass()
+    for (file in new File(installDist.outputs.files[0], "lib").listFiles()) {
+        println file
+    }
+})
+
+macAppBundle {
+    mainClassName = project.mainClassName
+    icon = "myIcon.icns"
+    if (Os.isFamily(Os.FAMILY_MAC) && (appStyle == 'Oracle' || appStyle == 'universalJavaApplicationStub')) {
+        bundleJRE = true
+    }
+    javaProperties.put("apple.laf.useScreenMenuBar", "true")
+    backgroundImage = "doc/macbackground.png"
+    jarTask = "shadowJar"
+}
+

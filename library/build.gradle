@@ -1,0 +1,93 @@
+/*
+ * Copyright 2020 Markil 3. All rights reserved.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.taskdefs.condition.Os
+
+import java.nio.file.Files
+
+buildscript {
+    repositories {
+        jcenter()
+        google()
+    }
+}
+
+plugins {
+    id "java-library"
+}
+
+repositories {
+    google()
+    jcenter()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven {
+        url  "https://dl.bintray.com/jmonkeyengine/org.jmonkeyengine"
+    }
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    // Logging
+    implementation "org.slf4j:slf4j-api:1.7.15"
+    implementation "org.slf4j:slf4j-simple:1.7.5"
+
+    implementation "${jme3.g}:jme3-core:${jme3.version}"
+    implementation "${jme3.g}:jme3-testdata:${jme3.version}"
+}
+
+processResources {
+    from ("..") {
+        include "LICENSE"
+        include "JME3-LICENSE"
+    }
+}
+
+/*
+ * TODO - Why does the shadowjar task in the main project run when we use library:build?
+ */
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+sourcesJar {
+    baseName rootProject.name
+    version rootProject.version
+    from ("..") {
+        include "LICENSE"
+        include "JME3-LICENSE"
+    }
+}
+
+javadocJar {
+    baseName rootProject.name
+    version rootProject.version
+    from ("..") {
+        include "LICENSE"
+        include "JME3-LICENSE"
+    }
+}
+
+jar {
+    baseName rootProject.name
+    version rootProject.version
+    manifest {
+        attributes "Class-Path": configurations.runtime.files.collect {
+                    "lib/$it.name"
+                }.join(" "),
+                "Implementation-Title": rootProject.name,
+                "Implementation-Version": rootProject.version,
+                "Version-Code": rootProject.versionNumber
+    }
+}

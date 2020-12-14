@@ -45,23 +45,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-import static markil3.controller.Main.ACTION_BOTTOM;
-import static markil3.controller.Main.ACTION_LEFT;
-import static markil3.controller.Main.ACTION_RIGHT;
-import static markil3.controller.Main.ACTION_TOP;
-import static markil3.controller.Main.DPAD_DOWN;
-import static markil3.controller.Main.DPAD_LEFT;
-import static markil3.controller.Main.DPAD_RIGHT;
-import static markil3.controller.Main.DPAD_UP;
-import static markil3.controller.Main.L1;
-import static markil3.controller.Main.L2;
-import static markil3.controller.Main.L3;
-import static markil3.controller.Main.R1;
-import static markil3.controller.Main.R2;
-import static markil3.controller.Main.R3;
-import static markil3.controller.Main.SELECT;
-import static markil3.controller.Main.START;
-
 /**
  * Adding this app state will display a GUI screen showing the controllers
  * connected and information on what buttons are pressed. It is primarily
@@ -84,6 +67,61 @@ public class JoystickPreviewScreen extends BaseAppState
 {
     private static final org.slf4j.Logger logger =
             org.slf4j.LoggerFactory.getLogger(JoystickPreviewScreen.class);
+
+    /**
+     * Triangle on Playstation, Y on Xbox, and X on Nintendo.
+     */
+    public static final String ACTION_TOP = JoystickButton.BUTTON_0;
+    /**
+     * Circle on Playstation, B on Xbox, and A on Nintendo.
+     */
+    public static final String ACTION_RIGHT = JoystickButton.BUTTON_1;
+    /**
+     * X on Playstation, A on Xbox, and B on Nintendo.
+     */
+    public static final String ACTION_BOTTOM = JoystickButton.BUTTON_2;
+    /**
+     * Square on Playstation, X on Xbox, and Y on Nintendo.
+     */
+    public static final String ACTION_LEFT = JoystickButton.BUTTON_3;
+    public static final String L1 = JoystickButton.BUTTON_4;
+    public static final String R1 = JoystickButton.BUTTON_5;
+    /**
+     * Some gamepads (Xbox controllers notable) will use
+     * {@link JoystickAxis#LEFT_TRIGGER} instead.
+     */
+    public static final String L2 = JoystickButton.BUTTON_6;
+    /**
+     * Some gamepads (Xbox controllers notable) will use
+     * {@link JoystickAxis#RIGHT_TRIGGER} instead.
+     */
+    public static final String R2 = JoystickButton.BUTTON_7;
+    public static final String SELECT = JoystickButton.BUTTON_8;
+    public static final String START = JoystickButton.BUTTON_9;
+    /**
+     * Pressing the left analog stick.
+     */
+    public static final String L3 = JoystickButton.BUTTON_10;
+    /**
+     * Pressing the right analog stick.
+     */
+    public static final String R3 = JoystickButton.BUTTON_11;
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_X} instead.
+     */
+    public static final String DPAD_LEFT = "12";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_X} instead.
+     */
+    public static final String DPAD_RIGHT = "13";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_Y} instead.
+     */
+    public static final String DPAD_UP = "14";
+    /**
+     * Most gamepads may use {@link JoystickAxis#POV_Y} instead.
+     */
+    public static final String DPAD_DOWN = "15";
 
     /**
      * This node serves as the center of logic for each gamepad connected to
