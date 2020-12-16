@@ -564,7 +564,7 @@ public class JoystickPreviewScreen extends BaseAppState
             new ColorRGBA(0F, 0.75F, 0.25F, 1F);
 
     protected Node gui;
-    private BitmapFont guiFont;
+    protected BitmapFont guiFont;
 
     private Node[] gamepadCont;
 
@@ -588,15 +588,8 @@ public class JoystickPreviewScreen extends BaseAppState
 
         this.updateGamepad();
 
-        this.setEnabled(true);
-
         ((SimpleApplication) this.getApplication()).getGuiNode()
                 .attachChild(this.gui);
-        this.resize(((SimpleApplication) this.getApplication()).getCamera()
-                        .getWidth(),
-                ((SimpleApplication) this.getApplication()).getCamera()
-                        .getHeight());
-        this.setEnabled(true);
     }
 
     /**
@@ -750,6 +743,10 @@ public class JoystickPreviewScreen extends BaseAppState
         this.getApplication().getInputManager().addRawInputListener(this);
         this.getApplication().getInputManager()
                 .addJoystickConnectionListener(this);
+        this.resize(((SimpleApplication) this.getApplication()).getCamera()
+                        .getWidth(),
+                ((SimpleApplication) this.getApplication()).getCamera()
+                        .getHeight());
     }
 
     @Override
@@ -998,7 +995,7 @@ public class JoystickPreviewScreen extends BaseAppState
      * @param y - The current Y coordinate of the mouse.
      * @return Collision results on the GUI.
      */
-    private CollisionResults checkMouse(int x, int y)
+    protected CollisionResults checkMouse(int x, int y)
     {
         CollisionResults results = new CollisionResults();
         Ray ray = new Ray(new Vector3f(x, y, 0), new Vector3f(x, y, 1));
@@ -1072,6 +1069,7 @@ public class JoystickPreviewScreen extends BaseAppState
                                 ((Geometry) this.gamepadHeaders[i].getChild(0))
                                         .getMaterial().setColor("Color",
                                         HIGHLIGHTED_BUTTON_COLOR);
+                                evt.setConsumed();
                             }
                             else
                             {
@@ -1079,6 +1077,7 @@ public class JoystickPreviewScreen extends BaseAppState
                                 ((Geometry) this.gamepadHeaders[i].getChild(0))
                                         .getMaterial()
                                         .setColor("Color", BUTTON_COLOR);
+                                evt.setConsumed();
                             }
                         }
                         break;
