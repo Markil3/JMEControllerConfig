@@ -12,8 +12,23 @@ package markil3.controller;
 import com.jme3.app.DebugKeysAppState;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
-import com.jme3.input.JoystickAxis;
-import com.jme3.input.JoystickButton;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
+import com.jme3.font.Rectangle;
+import com.jme3.input.RawInputListener;
+import com.jme3.input.event.JoyAxisEvent;
+import com.jme3.input.event.JoyButtonEvent;
+import com.jme3.input.event.KeyInputEvent;
+import com.jme3.input.event.MouseButtonEvent;
+import com.jme3.input.event.MouseMotionEvent;
+import com.jme3.input.event.TouchEvent;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
 
 /**
@@ -42,12 +57,12 @@ public class Main extends SimpleApplication
 
     public Main()
     {
-        super(new StatsAppState(), new DebugKeysAppState(), new JoystickPreviewScreen());
+        super(new StatsAppState(), new DebugKeysAppState(),
+                new NewJoystickPreviewScreen());
     }
 
     @Override
     public void simpleInitApp()
     {
-
     }
 }
