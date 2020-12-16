@@ -10,15 +10,6 @@
 
 import org.apache.tools.ant.taskdefs.condition.Os
 
-import java.nio.file.Files
-
-buildscript {
-    repositories {
-        jcenter()
-        google()
-    }
-}
-
 plugins {
     id "application"
     id "distribution"
@@ -28,13 +19,7 @@ plugins {
 }
 
 repositories {
-    google()
     jcenter()
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-    maven {
-        url  "https://dl.bintray.com/jmonkeyengine/org.jmonkeyengine"
-    }
 }
 
 sourceCompatibility = "1.8"
