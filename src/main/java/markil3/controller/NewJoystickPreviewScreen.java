@@ -69,7 +69,7 @@ class NewJoystickPreviewScreen extends JoystickPreviewScreen
                         {
                             evt.setConsumed();
                             this.getStateManager().detach(this);
-                            logger.info("Calibrating!");
+                            this.getStateManager().attach(new CalibrateInputScreen());
                             break;
                         }
                     }
