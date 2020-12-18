@@ -12,7 +12,10 @@ package markil3.controller;
 import com.jme3.app.DebugKeysAppState;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
+import com.jme3.font.BitmapText;
 import com.jme3.input.JoystickCompatibilityMappings;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeSystem;
 
@@ -27,7 +30,7 @@ import java.net.URL;
  * @author Markil 3
  * @version 1.0
  */
-public class Main extends SimpleApplication
+public class Main extends SimpleApplication implements ActionListener
 {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.
             getLogger(Main.class);
@@ -146,10 +149,12 @@ public class Main extends SimpleApplication
         app.start();
     }
 
+    private Node calibrateButton;
+
     public Main()
     {
         super(new StatsAppState(), new DebugKeysAppState(),
-                new NewJoystickPreviewScreen());
+                new JoystickPreviewScreen());
     }
 
     @Override
@@ -177,5 +182,45 @@ public class Main extends SimpleApplication
     @Override
     public void simpleInitApp()
     {
+        this.calibrateButton =
+                GUIUtils.createButton(this.getAssetManager(), this.guiFont,
+                        "calibrate", "Calibrate Gamepad");
+        this.calibrateButton.setLocalTranslation((this.getCamera().getWidth() -
+                ((BitmapText) this.calibrateButton.getChild(1)).getLineWidth() -
+                10) / 2F, this.getCamera().getHeight(), 0);
+    }
+
+    @Override
+    public void simpleUpdate(float tpf)
+    {
+        JoystickPreviewScreen screen = this.getStateManager().getState(JoystickPreviewScreen.class);
+        if (this.calibrateButton.getParent() == null && screen != null)
+        {
+            this.guiNode.attachChild(this.calibrateButton);
+            this.inputManager.addListener(this, screen.CLICK_MAPPING);
+        }
+        else if (this.calibrateButton.getParent() != null && screen == null)
+        {
+            this.guiNode.detachChild(this.calibrateButton);
+            this.inputManager.removeListener(this);
+        }
+    }
+
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf)
+    {
+        String buttonId;
+        JoystickPreviewScreen screen = this.getStateManager().getState(JoystickPreviewScreen.class);
+        if (screen != null && name.equals(screen.CLICK_MAPPING))
+        {
+            buttonId = GUIUtils.handleButtonPress(this.calibrateButton,
+                    this.getInputManager().getCursorPosition(),
+                    isPressed);
+            if (!isPressed && "calibrate".equals(buttonId))
+            {
+                this.getStateManager().detach(screen);
+                this.getStateManager().attach(new CalibrateInputScreen(CALIBRATION_FILE));
+            }
+        }
     }
 }

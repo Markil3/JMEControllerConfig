@@ -14,15 +14,16 @@ import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
-import com.jme3.collision.CollisionResult;
-import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.Joystick;
 import com.jme3.input.JoystickAxis;
 import com.jme3.input.JoystickButton;
 import com.jme3.input.JoystickConnectionListener;
+import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.input.event.JoyAxisEvent;
 import com.jme3.input.event.JoyButtonEvent;
 import com.jme3.input.event.KeyInputEvent;
@@ -33,9 +34,8 @@ import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
-import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
-import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
@@ -63,7 +63,7 @@ import java.util.Map;
  * @author Stephen Gold
  */
 public class JoystickPreviewScreen extends BaseAppState
-        implements RawInputListener, JoystickConnectionListener
+        implements RawInputListener, JoystickConnectionListener, ActionListener
 {
     private static final org.slf4j.Logger logger =
             org.slf4j.LoggerFactory.getLogger(JoystickPreviewScreen.class);
@@ -122,6 +122,7 @@ public class JoystickPreviewScreen extends BaseAppState
      * Most gamepads may use {@link JoystickAxis#POV_Y} instead.
      */
     public static final String DPAD_DOWN = "15";
+    final String CLICK_MAPPING = "previewButtonClick";
 
     /**
      * This node serves as the center of logic for each gamepad connected to
@@ -559,10 +560,6 @@ public class JoystickPreviewScreen extends BaseAppState
         }
     }
 
-    final ColorRGBA BUTTON_COLOR = new ColorRGBA(0F, 0.1F, 0F, 1F);
-    final ColorRGBA HIGHLIGHTED_BUTTON_COLOR =
-            new ColorRGBA(0F, 0.75F, 0.25F, 1F);
-
     protected Node gui;
     protected BitmapFont guiFont;
 
@@ -590,6 +587,9 @@ public class JoystickPreviewScreen extends BaseAppState
 
         ((SimpleApplication) this.getApplication()).getGuiNode()
                 .attachChild(this.gui);
+
+        app.getInputManager().addMapping(CLICK_MAPPING,
+                new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     }
 
     /**
@@ -670,9 +670,6 @@ public class JoystickPreviewScreen extends BaseAppState
      */
     private void addButtons()
     {
-        Node button;
-        BitmapText buttonText;
-        Geometry buttonBackground;
         int i, l;
 
         /*
@@ -690,33 +687,12 @@ public class JoystickPreviewScreen extends BaseAppState
         this.gamepadHeaders = new Node[l];
         for (i = 0, l = this.gamepadCont.length; i < l; i++)
         {
-            button = new Node();
-            buttonText = this.guiFont.createLabel("Gamepad " +
-                    this.getApplication().getInputManager().getJoysticks()[i]
-                            .getJoyId());
-            buttonText.setUserData("gamepad", i);
-            buttonBackground = new Geometry("gamepad" + i,
-                    new Quad(buttonText.getLineWidth() + 10,
-                            buttonText.getLineHeight() + 5));
-            buttonBackground.setMaterial(
-                    new Material(this.getApplication().getAssetManager(),
-                            "Common/MatDefs/Misc/Unshaded.j3md"));
-            if (this.gamepadCont[i].getParent() != null)
-            {
-                buttonBackground.getMaterial()
-                        .setColor("Color", HIGHLIGHTED_BUTTON_COLOR);
-            }
-            else
-            {
-                buttonBackground.getMaterial().setColor("Color", BUTTON_COLOR);
-            }
-            buttonBackground.setUserData("gamepad", i);
-            buttonBackground
-                    .setLocalTranslation(0, -buttonText.getLineHeight(), 0);
-            button.attachChild(buttonBackground);
-            button.attachChild(buttonText);
-            this.gui.attachChild(button);
-            this.gamepadHeaders[i] = button;
+            this.gamepadHeaders[i] = GUIUtils.createButton(
+                    this.getApplication().getAssetManager(), this.guiFont,
+                    "gamepad" + i, "Gamepad " +
+                            this.getApplication().getInputManager()
+                                    .getJoysticks()[i].getJoyId());
+            this.gui.attachChild(this.gamepadHeaders[i]);
         }
     }
 
@@ -735,6 +711,7 @@ public class JoystickPreviewScreen extends BaseAppState
     protected void cleanup(Application app)
     {
         this.gui.removeFromParent();
+        app.getInputManager().deleteMapping(CLICK_MAPPING);
     }
 
     @Override
@@ -743,10 +720,9 @@ public class JoystickPreviewScreen extends BaseAppState
         this.getApplication().getInputManager().addRawInputListener(this);
         this.getApplication().getInputManager()
                 .addJoystickConnectionListener(this);
-        this.resize(((SimpleApplication) this.getApplication()).getCamera()
-                        .getWidth(),
-                ((SimpleApplication) this.getApplication()).getCamera()
-                        .getHeight());
+        this.resize();
+        this.getApplication().getInputManager()
+                .addListener(this, CLICK_MAPPING);
     }
 
     @Override
@@ -755,6 +731,7 @@ public class JoystickPreviewScreen extends BaseAppState
         this.getApplication().getInputManager().removeRawInputListener(this);
         this.getApplication().getInputManager()
                 .removeJoystickConnectionListener(this);
+        this.getApplication().getInputManager().removeListener(this);
     }
 
     /**
@@ -784,8 +761,8 @@ public class JoystickPreviewScreen extends BaseAppState
             /*
              * The name of the gamepad.
              */
-            this.labels[joy.getJoyId()][0] =
-                    this.guiFont.createLabel(joy.getName());
+            this.labels[joy.getJoyId()][0] = this.guiFont.createLabel(
+                    "Gamepad " + joy.getJoyId() + ": " + joy.getName());
             this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][0]);
@@ -793,6 +770,8 @@ public class JoystickPreviewScreen extends BaseAppState
              * The key for the axis. Each of the axis rows will display the
              * index of the axis, its given name, its logical ID after
              * joystick remapping has occurred, and the axis index again.
+             * TODO - Whenever I add the " Gamepad X: " part to the previous
+             *  label, this one displays all funky.
              */
             this.labels[joy.getJoyId()][1] = this.guiFont
                     .createLabel("Axis Index: Axis Name (logical ID, axis ID)");
@@ -912,11 +891,21 @@ public class JoystickPreviewScreen extends BaseAppState
     }
 
     /**
-     * Repositions the screen elements.
-     * @param width - The width of the screen.
-     * @param height - The height of the screen.
+     * Automatically scales and positions elements based on the camera
+     * dimensions.
      */
-    public void resize(int width, int height)
+    public void resize()
+    {
+        Camera camera = this.getApplication().getCamera();
+        this.resize(camera.getWidth(), camera.getHeight());
+    }
+
+    /**
+     * Scales and positions elements of this screen.
+     * @param width - The width to scale to.
+     * @param height - The height to scale to.
+     */
+    protected void resize(int width, int height)
     {
         this.gui.setLocalTranslation(0, this.getScreenSize().y, 0);
         if (this.gamepadHeaders != null)
@@ -989,18 +978,35 @@ public class JoystickPreviewScreen extends BaseAppState
     {
     }
 
-    /**
-     * A convenience method to discover what the mouse is currently over.
-     * @param x - The current X coordinate of the mouse.
-     * @param y - The current Y coordinate of the mouse.
-     * @return Collision results on the GUI.
-     */
-    protected CollisionResults checkMouse(int x, int y)
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf)
     {
-        CollisionResults results = new CollisionResults();
-        Ray ray = new Ray(new Vector3f(x, y, 0), new Vector3f(x, y, 1));
-        this.gui.collideWith(ray, results);
-        return results;
+        String buttonId;
+        int gamepad;
+        if (name.equals(CLICK_MAPPING))
+        {
+            buttonId = GUIUtils.handleButtonPress(this.gui,
+                    this.getApplication().getInputManager().getCursorPosition(),
+                    isPressed);
+            if (!isPressed && buttonId != null)
+            {
+                if (buttonId.startsWith("gamepad"))
+                {
+                    gamepad = Integer.parseInt(buttonId.substring(7));
+                    for (int i = 0, l = this.gamepadCont.length; i < l; i++)
+                    {
+                        if (i == gamepad)
+                        {
+                            this.gui.attachChild(this.gamepadCont[i]);
+                        }
+                        else
+                        {
+                            this.gamepadCont[i].removeFromParent();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1011,36 +1017,35 @@ public class JoystickPreviewScreen extends BaseAppState
     @Override
     public void onMouseMotionEvent(MouseMotionEvent evt)
     {
-        ButtonView button = null;
-        CollisionResults results = this.checkMouse(evt.getX(), evt.getY());
-        if (results.size() > 0)
-        {
-            for (CollisionResult result : results)
-            {
-                if (result.getGeometry().getUserData("view") != null)
-                {
-                    if (result.getGeometry()
-                            .getUserData("view") instanceof ButtonView)
-                    {
-                        button = result.getGeometry().getUserData("view");
-                        break;
-                    }
-                }
-            }
-        }
-        if (button != null)
-        {
-            this.refLabel.setText(button.getName().substring(8));
-            Vector2f size = this.getScreenSize();
-            this.resize((int) size.x, (int) size.y);
-        }
-        else
-        {
-            if (this.refLabel.getText().length() > 0)
-            {
-                this.refLabel.setText("");
-            }
-        }
+//        ButtonView button = null;
+//        CollisionResults results = this.checkMouse(evt.getX(), evt.getY());
+//        if (results.size() > 0)
+//        {
+//            for (CollisionResult result : results)
+//            {
+//                if (result.getGeometry().getUserData("view") != null)
+//                {
+//                    if (result.getGeometry()
+//                            .getUserData("view") instanceof ButtonView)
+//                    {
+//                        button = result.getGeometry().getUserData("view");
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//        if (button != null)
+//        {
+//            this.refLabel.setText(button.getName().substring(8));
+//            this.resize();
+//        }
+//        else
+//        {
+//            if (this.refLabel.getText().length() > 0)
+//            {
+//                this.refLabel.setText("");
+//            }
+//        }
     }
 
     /**
@@ -1050,41 +1055,6 @@ public class JoystickPreviewScreen extends BaseAppState
     @Override
     public void onMouseButtonEvent(MouseButtonEvent evt)
     {
-        Integer gamepad;
-        if (evt.isPressed() && evt.getButtonIndex() == 0)
-        {
-            CollisionResults results = this.checkMouse(evt.getX(), evt.getY());
-            if (results.size() > 0)
-            {
-                for (CollisionResult result : results)
-                {
-                    if (result.getGeometry().getUserData("gamepad") != null)
-                    {
-                        gamepad = result.getGeometry().getUserData("gamepad");
-                        for (int i = 0, l = this.gamepadCont.length; i < l; i++)
-                        {
-                            if (i == gamepad)
-                            {
-                                this.gui.attachChild(this.gamepadCont[i]);
-                                ((Geometry) this.gamepadHeaders[i].getChild(0))
-                                        .getMaterial().setColor("Color",
-                                        HIGHLIGHTED_BUTTON_COLOR);
-                                evt.setConsumed();
-                            }
-                            else
-                            {
-                                this.gamepadCont[i].removeFromParent();
-                                ((Geometry) this.gamepadHeaders[i].getChild(0))
-                                        .getMaterial()
-                                        .setColor("Color", BUTTON_COLOR);
-                                evt.setConsumed();
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -1100,15 +1070,13 @@ public class JoystickPreviewScreen extends BaseAppState
     @Override
     public void onConnected(Joystick joystick)
     {
-        Vector2f size = this.getScreenSize();
         this.updateGamepad();
-        this.resize((int) size.x, (int) size.y);
+        this.resize();
     }
 
     @Override
     public void onDisconnected(Joystick joystick)
     {
-        Vector2f size = this.getScreenSize();
         /*
          * TODO - This callback will fire before the joystick is actually
          *  removed. This is helpful at times, but it does mean we will have a
@@ -1116,6 +1084,6 @@ public class JoystickPreviewScreen extends BaseAppState
          *  removed.
          */
         this.updateGamepad();
-        this.resize((int) size.x, (int) size.y);
+        this.resize();
     }
 }

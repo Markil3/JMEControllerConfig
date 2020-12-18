@@ -3,7 +3,6 @@ package markil3.controller;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
-import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.font.Rectangle;
@@ -21,14 +20,10 @@ import com.jme3.input.event.MouseButtonEvent;
 import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.input.event.TouchEvent;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Ray;
-import com.jme3.math.Vector2f;
 import com.jme3.renderer.Camera;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
-import com.jme3.scene.shape.Quad;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -54,7 +49,6 @@ import static markil3.controller.JoystickPreviewScreen.R2;
 import static markil3.controller.JoystickPreviewScreen.R3;
 import static markil3.controller.JoystickPreviewScreen.SELECT;
 import static markil3.controller.JoystickPreviewScreen.START;
-import static markil3.controller.Main.CALIBRATION_FILE;
 
 /**
  * Provides a series of prompts that will build a controller calibration file.
@@ -71,9 +65,6 @@ public class CalibrateInputScreen extends BaseAppState
             new LinkedHashMap<>();
     private static final LinkedHashMap<String, String> AXIS_PROMPTS =
             new LinkedHashMap<>();
-    final ColorRGBA BUTTON_COLOR = new ColorRGBA(0F, 0.1F, 0F, 1F);
-    final ColorRGBA HIGHLIGHTED_BUTTON_COLOR =
-            new ColorRGBA(0F, 0.75F, 0.25F, 1F);
     final String CLICK_MAPPING = "calibrateButtonClick";
 
     static
@@ -117,6 +108,7 @@ public class CalibrateInputScreen extends BaseAppState
         }
     }
 
+    private final File calibrationFile;
     private Node gui;
     protected BitmapFont guiFont;
 
@@ -152,6 +144,15 @@ public class CalibrateInputScreen extends BaseAppState
     private HashMap<String, Boolean> mapBias = new HashMap<>();
 
     private HashMap<Object, Float> defaultValues = new HashMap<>();
+
+    /**
+     * Creates a screen for calibrating and remapping a game controller.
+     * @param calibrationFile - The file to store the results in.
+     */
+    public CalibrateInputScreen(File calibrationFile)
+    {
+        this.calibrationFile = calibrationFile;
+    }
 
     @Override
     protected void initialize(Application app)
@@ -324,6 +325,7 @@ public class CalibrateInputScreen extends BaseAppState
             this.getApplication().getInputManager()
                     .removeRawInputListener(this);
         }
+        this.getApplication().getInputManager().removeListener(this);
     }
 
     /**
@@ -343,8 +345,10 @@ public class CalibrateInputScreen extends BaseAppState
      */
     protected void resize(int width, int height)
     {
-        float introHeight = GUIUtils.alignContainer(this.introCont, width, height);
-        float mainHeight = GUIUtils.alignContainer(this.mainOptions, width, height);
+        float introHeight =
+                GUIUtils.alignContainer(this.introCont, width, height);
+        float mainHeight =
+                GUIUtils.alignContainer(this.mainOptions, width, height);
         this.gui.setLocalTranslation(0, height / 2F, 0);
         this.introCont.setLocalTranslation((width) / 2F, (introHeight) / 2F, 0);
         this.mainOptions
@@ -411,8 +415,7 @@ public class CalibrateInputScreen extends BaseAppState
                     break;
                 case "cancel":
                     this.getStateManager().detach(this);
-                    this.getStateManager()
-                            .attach(new NewJoystickPreviewScreen());
+                    this.getStateManager().attach(new JoystickPreviewScreen());
                     break;
                 case "close":
                     this.getApplication().stop();
@@ -645,11 +648,11 @@ public class CalibrateInputScreen extends BaseAppState
         this.mainOptions.removeFromParent();
         this.gamepad.removeFromParent();
 
-        if (!CALIBRATION_FILE.exists())
+        if (!calibrationFile.exists())
         {
             try
             {
-                if (!CALIBRATION_FILE.createNewFile())
+                if (!calibrationFile.createNewFile())
                 {
                     throw new IOException("Could not create calibration file.");
                 }
@@ -668,7 +671,7 @@ public class CalibrateInputScreen extends BaseAppState
             }
         }
 
-        try (FileInputStream input = new FileInputStream(CALIBRATION_FILE))
+        try (FileInputStream input = new FileInputStream(calibrationFile))
         {
             props.load(input);
         }
@@ -703,7 +706,7 @@ public class CalibrateInputScreen extends BaseAppState
                 }
             }
             try (FileOutputStream output = new FileOutputStream(
-                    CALIBRATION_FILE))
+                    calibrationFile))
             {
                 props.store(output, "Joystick Calibration File");
                 this.introCont.detachAllChildren();
