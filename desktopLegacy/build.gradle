@@ -1,0 +1,82 @@
+/*
+ * Copyright 2020 Markil 3. All rights reserved.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+    id "application"
+    id "distribution"
+    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "edu.sc.seis.launch4j" version "2.4.5"
+    id "edu.sc.seis.macAppBundle" version "2.3.0"
+}
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    implementation(project(':desktop')) {
+        exclude group: jme3.g, module: "jme3-lwjgl3"
+    }
+    implementation "${jme3.g}:jme3-lwjgl:${jme3.version}"
+}
+
+// Define the main class for the application
+mainClassName = 'markil3.controller.Main'
+
+/*
+ * TODO - The default zipped distributions are a bit of a mess.
+ */
+jar {
+    baseName rootProject.name
+    version rootProject.version
+    manifest {
+        attributes "Main-Class": mainClassName,
+                "Class-Path": configurations.runtime.files.collect {
+                    "lib/$it.name"
+                }.join(" "),
+                "Implementation-Title": rootProject.name,
+                "Implementation-Version": rootProject.version,
+                "Version-Code": versionNumber
+    }
+}
+
+shadowJar {
+    archivesBaseName = rootProject.name
+    archiveClassifier = "universal-lwjgl2"
+    version = rootProject.version
+    mainClassName = project.mainClassName
+}
+
+launch4j {
+    mainClassName = project.mainClassName
+    outfile = rootProject.name + "-" + rootProject.version + "-windows-lwjgl2.exe"
+    copyConfigurable = shadowJar.outputs.files
+    jar = shadowJar.archiveFile.get()
+    bundledJrePath = "jre"
+    //icon = new File(sourceSets.main.resources.srcDirs[0], "icon256.ico")
+}
+
+createExe.doLast({
+    println project.tasks.installDist.outputs.files.getClass()
+    for (file in new File(installDist.outputs.files[0], "lib").listFiles()) {
+        println file
+    }
+})
+
+macAppBundle {
+    mainClassName = project.mainClassName
+    icon = "myIcon.icns"
+    if (Os.isFamily(Os.FAMILY_MAC) && (appStyle == 'Oracle' || appStyle == 'universalJavaApplicationStub')) {
+        bundleJRE = true
+    }
+    javaProperties.put("apple.laf.useScreenMenuBar", "true")
+    backgroundImage = "doc/macbackground.png"
+    jarTask = "shadowJar"
+}

@@ -17,3 +17,5 @@ include 'services:webservice'
 
 rootProject.name = 'JMEControllerConfig'
 include "library"
+include "desktop"
+include "desktopLegacy"
