@@ -15,8 +15,6 @@ import com.jme3.app.StatsAppState;
 import com.jme3.input.JoystickCompatibilityMappings;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeSystem;
-import com.simsilica.lemur.GuiGlobals;
-import com.simsilica.lemur.style.BaseStyles;
 
 import java.io.File;
 import java.io.IOException;
@@ -137,15 +135,15 @@ public class Main extends SimpleApplication
         Main app;
         AppSettings settings;
         app = new Main();
-            settings = new AppSettings(true);
-            settings.setTitle("Joystick Preview");
-            settings.setUseJoysticks(true);
-            settings.setEmulateMouse(true);
-            settings.setVSync(true);
-            settings.setWidth(1280);
-            settings.setHeight(720);
-            app.setSettings(settings);
-            app.start();
+        settings = new AppSettings(true);
+        settings.setTitle("Joystick Preview");
+        settings.setUseJoysticks(true);
+        settings.setEmulateMouse(true);
+        settings.setVSync(true);
+        settings.setWidth(1280);
+        settings.setHeight(720);
+        app.setSettings(settings);
+        app.start();
     }
 
     public Main()
@@ -164,7 +162,8 @@ public class Main extends SimpleApplication
             {
                 if (!GAME_FOLDER.mkdir())
                 {
-                    throw new RuntimeException("Could not create game directory folder.");
+                    throw new RuntimeException(
+                            "Could not create game directory folder.");
                 }
             }
         }
@@ -178,8 +177,5 @@ public class Main extends SimpleApplication
     @Override
     public void simpleInitApp()
     {
-        GuiGlobals.initialize(this);
-        BaseStyles.loadGlassStyle();
-        GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
     }
 }

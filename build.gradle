@@ -41,8 +41,6 @@ dependencies {
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-desktop:${jme3.version}"
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
-    implementation "org.codehaus.groovy:groovy-all:2.4.5"
-    implementation "com.simsilica:lemur:1.14.0"
 }
 
 // Define the main class for the application

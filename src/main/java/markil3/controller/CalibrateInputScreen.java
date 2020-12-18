@@ -3,12 +3,18 @@ package markil3.controller;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
+import com.jme3.font.Rectangle;
 import com.jme3.input.Joystick;
 import com.jme3.input.JoystickAxis;
 import com.jme3.input.JoystickButton;
+import com.jme3.input.MouseInput;
 import com.jme3.input.RawInputListener;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.input.event.JoyAxisEvent;
 import com.jme3.input.event.JoyButtonEvent;
 import com.jme3.input.event.KeyInputEvent;
@@ -17,18 +23,14 @@ import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.input.event.TouchEvent;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
+import com.jme3.math.Vector2f;
+import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
-import com.simsilica.lemur.Axis;
-import com.simsilica.lemur.Button;
-import com.simsilica.lemur.Command;
-import com.simsilica.lemur.Container;
-import com.simsilica.lemur.FillMode;
-import com.simsilica.lemur.HAlignment;
-import com.simsilica.lemur.Label;
-import com.simsilica.lemur.component.BoxLayout;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -62,7 +64,7 @@ import static markil3.controller.Main.CALIBRATION_FILE;
  * @author Markil3
  */
 public class CalibrateInputScreen extends BaseAppState
-        implements Command<Button>, RawInputListener
+        implements RawInputListener, ActionListener
 {
     private static final org.slf4j.Logger logger =
             org.slf4j.LoggerFactory.getLogger(CalibrateInputScreen.class);
@@ -74,6 +76,7 @@ public class CalibrateInputScreen extends BaseAppState
     final ColorRGBA BUTTON_COLOR = new ColorRGBA(0F, 0.1F, 0F, 1F);
     final ColorRGBA HIGHLIGHTED_BUTTON_COLOR =
             new ColorRGBA(0F, 0.75F, 0.25F, 1F);
+    final String CLICK_MAPPING = "calibrateButtonClick";
 
     static
     {
@@ -119,17 +122,17 @@ public class CalibrateInputScreen extends BaseAppState
     private Node gui;
     protected BitmapFont guiFont;
 
-    private Container introCont;
-    private Button startButton;
-    private Container mainOptions;
-    private Button skipButton;
-    private Button cancelButton;
-    private Button restartButton;
+    private Node introCont;
+    private Node startButton;
+    private Node mainOptions;
+    private Node skipButton;
+    private Node cancelButton;
+    private Node restartButton;
     private JoystickPreviewScreen.GamepadView gamepad;
 
-    private Label currentJoystick;
-    private Label currentElement;
-    private Label currentTime;
+    private BitmapText currentJoystick;
+    private BitmapText currentElement;
+    private BitmapText currentTime;
 
     private boolean listeningRaw;
     private Joystick joystick;
@@ -159,6 +162,9 @@ public class CalibrateInputScreen extends BaseAppState
         Node button = new Node();
         buttonText = this.guiFont.createLabel(content);
         buttonText.setUserData("button", id);
+        buttonText.setBox(new Rectangle(0, 0, buttonText.getLineWidth(), buttonText.getLineHeight()));
+        buttonText.setAlignment(BitmapFont.Align.Center);
+        buttonText.setVerticalAlignment(BitmapFont.VAlign.Center);
         buttonBackground = new Geometry("button-" + id,
                 new Quad(buttonText.getLineWidth() + 10,
                         buttonText.getLineHeight() + 5));
@@ -168,7 +174,8 @@ public class CalibrateInputScreen extends BaseAppState
         buttonBackground.getMaterial()
                 .setColor("Color", HIGHLIGHTED_BUTTON_COLOR);
         buttonBackground.setUserData("button", id);
-        buttonBackground.setLocalTranslation(0, -buttonText.getLineHeight(), 0);
+        buttonBackground.setLocalTranslation(-2.5F, -buttonText.getLineHeight() - 2.5F, 0);
+        button.setUserData("button", id);
         button.attachChild(buttonBackground);
         button.attachChild(buttonText);
         return button;
@@ -177,43 +184,45 @@ public class CalibrateInputScreen extends BaseAppState
     @Override
     protected void initialize(Application app)
     {
+        BitmapText text;
+
         this.gui = new Node();
         this.guiFont =
                 app.getAssetManager().loadFont("Interface/Fonts/Default.fnt");
 
-        this.introCont = new Container();
-        this.introCont.setLayout(new BoxLayout(Axis.Y, FillMode.Even));
-        this.introCont.addChild(new Label(
-                "This screen will let you properly calibrate your controller"));
-        this.introCont.addChild(new Label(
-                "inputs. When prompted, press the button or axis that"));
-        this.introCont.addChild(new Label(
-                " corresponds to the highlighted button and hold it "));
-        this.introCont.addChild(new Label(
-                "for one seconds. Do not apply any additional inputs"));
-        this.introCont.addChild(
-                new Label(" beyond what is prompted. Press \"Start\" to "));
-        this.introCont.addChild(new Label("begin."));
+        this.introCont = new Node();
 
-        this.startButton = new Button("Start");
-        this.startButton.addClickCommands(this);
-        this.introCont.addChild(this.startButton);
+        text = this.guiFont.createLabel(
+                "This screen will let you properly calibrate your " +
+                        "controller\n" +
+                        "inputs. When prompted, press the button or axis " +
+                        "that\n" +
+                        "corresponds to the highlighted button and hold it\n" +
+                        "for one seconds. Do not apply any additional " +
+                        "inputs\n" +
+                        "beyond what is prompted. Press \"Start\" to \n" +
+                        "begin.");
+        text.setBox(new Rectangle(0, 0, text.getLineWidth(), text.getHeight()));
+        text.setAlignment(BitmapFont.Align.Center);
+        text.setVerticalAlignment(BitmapFont.VAlign.Center);
+        this.introCont.attachChild(text);
 
-        this.mainOptions = new Container();
-        this.mainOptions.setLayout(new BoxLayout(Axis.Y, FillMode.Even));
-        this.mainOptions.addChild(new Label("First, press any button or axis"));
-        this.mainOptions.addChild(
-                new Label("on the controller you want to calibrate."));
+        this.startButton = this.createButton("start", "Start");
+//        this.startButton.addClickCommands(this);
+        this.introCont.attachChild(this.startButton);
 
-        this.skipButton = new Button("Skip");
-        this.skipButton.addClickCommands(this);
+        this.mainOptions = new Node();
 
-        this.cancelButton = new Button("Cancel");
-        this.cancelButton.addClickCommands(this);
-        this.introCont.addChild(this.cancelButton);
+        this.mainOptions.attachChild(this.guiFont.createLabel(
+                "First, press any button or axis\n" +
+                        "on the controller you want to calibrate."));
 
-        this.restartButton = new Button("Close Application");
-        this.restartButton.addClickCommands(this);
+        this.skipButton = this.createButton("skip", "Skip");
+
+        this.cancelButton = this.createButton("cancel", "Cancel");
+        this.introCont.attachChild(this.cancelButton);
+
+        this.restartButton = this.createButton("close", "Close Application");
 
         this.gui.attachChild(this.introCont);
 
@@ -222,6 +231,9 @@ public class CalibrateInputScreen extends BaseAppState
 
         ((SimpleApplication) this.getApplication()).getGuiNode()
                 .attachChild(this.gui);
+
+        app.getInputManager().addMapping(CLICK_MAPPING,
+                new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     }
 
     @Override
@@ -311,6 +323,7 @@ public class CalibrateInputScreen extends BaseAppState
     @Override
     protected void cleanup(Application app)
     {
+        app.getInputManager().deleteMapping(CLICK_MAPPING);
         ((SimpleApplication) this.getApplication()).getGuiNode()
                 .detachChild(this.gui);
     }
@@ -319,6 +332,8 @@ public class CalibrateInputScreen extends BaseAppState
     protected void onEnable()
     {
         this.resize();
+        this.getApplication().getInputManager()
+                .addListener(this, CLICK_MAPPING);
     }
 
     @Override
@@ -341,6 +356,46 @@ public class CalibrateInputScreen extends BaseAppState
         this.resize(camera.getWidth(), camera.getHeight());
     }
 
+    private float alignContainer(Node cont, int width, int height)
+    {
+        float totalHeight = 0;
+        Vector2f prevButtonDimensions = null;
+        for (Spatial node : cont.getChildren())
+        {
+            if (node instanceof BitmapText)
+            {
+//                ((BitmapText) node).setAlignment(BitmapFont.Align.Center);
+//                ((BitmapText) node).setVerticalAlignment(BitmapFont.VAlign
+//                .Center);
+                node.setLocalTranslation(
+                        -((BitmapText) node).getLineWidth() / 2F, -totalHeight,
+                        0);
+                totalHeight += ((BitmapText) node).getHeight();
+                prevButtonDimensions = null;
+            }
+            else if (node.getUserData("button") != null)
+            {
+                Quad quad = ((Quad) ((Geometry) ((Node) node).getChild(0))
+                        .getMesh());
+                if (prevButtonDimensions != null)
+                {
+                    node.setLocalTranslation(
+                            -quad.getWidth() / 2F + prevButtonDimensions.x + 10,
+                            -totalHeight + prevButtonDimensions.y, 0);
+                }
+                else
+                {
+                    node.setLocalTranslation(-quad.getWidth() / 2F,
+                            -totalHeight - 10, 0);
+                    totalHeight += quad.getHeight() + 10;
+                }
+//                prevButtonDimensions = new Vector2f(quad.getWidth(), quad
+//                .getHeight());
+            }
+        }
+        return totalHeight;
+    }
+
     /**
      * Scales and positions elements of this screen.
      * @param width - The width to scale to.
@@ -348,87 +403,92 @@ public class CalibrateInputScreen extends BaseAppState
      */
     protected void resize(int width, int height)
     {
-        for (Node node : this.introCont.getLayout().getChildren())
-        {
-            if (node instanceof Label)
-            {
-                ((Label) node).setTextHAlignment(HAlignment.Center);
-            }
-        }
-        for (Node node : this.mainOptions.getLayout().getChildren())
-        {
-            if (node instanceof Label)
-            {
-                ((Label) node).setTextHAlignment(HAlignment.Center);
-            }
-        }
-//        this.gui.setPreferredSize(new Vector3f(width, height, 0));
-//        this.gui.setLocalTranslation(0, this.gui.getPreferredSize().y, 0);
-        this.introCont.setLocalTranslation(
-                (width - this.introCont.getPreferredSize().x) / 2F,
-                (height + this.introCont.getPreferredSize().y) / 2F, 0);
-        this.mainOptions.setLocalTranslation(
-                width / 2F - this.mainOptions.getPreferredSize().x,
-                (height + this.mainOptions.getPreferredSize().y) / 2F, 0);
-        this.gamepad.setLocalTranslation(width / 2F, height / 2F - 256, 0);
+        float introHeight = this.alignContainer(this.introCont, width, height);
+        float mainHeight = this.alignContainer(this.mainOptions, width, height);
+        this.gui.setLocalTranslation(0, height / 2F, 0);
+        this.introCont.setLocalTranslation((width) / 2F, (introHeight) / 2F, 0);
+        this.mainOptions
+                .setLocalTranslation((width) / 4F, (mainHeight) / 2F, 0);
+        this.gamepad.setLocalTranslation(width / 2F, -256, 0);
         if (this.currentJoystick != null)
         {
             this.currentJoystick.setLocalTranslation(
-                    (width - this.currentJoystick.getPreferredSize().x) / 2F,
-                    height, 0);
+                    (width - this.currentJoystick.getLineWidth()) / 2F,
+                    height / 2F, 0);
         }
         if (this.currentElement != null &&
                 this.currentElement.getParent() != null)
         {
             this.currentElement.setLocalTranslation(
-                    width / 2F - this.currentElement.getPreferredSize().x,
-                    height - this.currentJoystick.getPreferredSize().y, 0);
+                    width / 2F - this.currentElement.getLineWidth() - 10,
+                    height / 2F - this.currentJoystick.getHeight(), 0);
         }
         if (this.currentTime != null && this.currentTime.getParent() != null)
         {
-            this.currentTime.setLocalTranslation(width / 2F,
-                    height - this.currentJoystick.getPreferredSize().y, 0);
+            this.currentTime.setLocalTranslation(width / 2F + 10,
+                    height / 2F - this.currentJoystick.getHeight(), 0);
         }
     }
 
     @Override
-    public void execute(Button source)
+    public void onAction(String name, boolean isPressed, float tpf)
     {
-        if (source == this.startButton)
+        CollisionResults results;
+        Ray ray;
+        Vector2f cursor;
+        String buttonId;
+        if (name.equals(CLICK_MAPPING) && !isPressed)
         {
-            this.introCont.removeFromParent();
-            this.gui.attachChild(this.mainOptions);
-            this.gui.attachChild(this.gamepad);
-            this.resize();
-
-            this.listeningRaw = true;
-            this.getApplication().getInputManager().addRawInputListener(this);
-        }
-        else if (source == this.skipButton)
-        {
-            if (this.currentStage != null)
+            cursor =
+                    this.getApplication().getInputManager().getCursorPosition();
+            results = new CollisionResults();
+            ray = new Ray(new Vector3f(cursor.x, cursor.y, 0),
+                    new Vector3f(cursor.x, cursor.y, 1));
+            this.gui.collideWith(ray, results);
+            for (CollisionResult result : results)
             {
-                this.timeHeld = -1;
-                this.focusedJoyElement = null;
-                this.focusValue = 0;
-                if (this.currentStage == PromptStage.BUTTON)
+                buttonId = result.getGeometry().getUserData("button");
+                if (buttonId != null)
                 {
-                    this.calibrateNextButton();
-                }
-                else
-                {
-                    this.calibrateNextAxis();
+                    switch (buttonId)
+                    {
+                    case "start":
+                        this.introCont.removeFromParent();
+                        this.gui.attachChild(this.mainOptions);
+                        this.gui.attachChild(this.gamepad);
+                        this.resize();
+
+                        this.listeningRaw = true;
+                        this.getApplication().getInputManager()
+                                .addRawInputListener(this);
+                        break;
+                    case "skip":
+                        if (this.currentStage != null)
+                        {
+                            this.timeHeld = -1;
+                            this.focusedJoyElement = null;
+                            this.focusValue = 0;
+                            if (this.currentStage == PromptStage.BUTTON)
+                            {
+                                this.calibrateNextButton();
+                            }
+                            else
+                            {
+                                this.calibrateNextAxis();
+                            }
+                        }
+                        break;
+                    case "cancel":
+                        this.getStateManager().detach(this);
+                        this.getStateManager()
+                                .attach(new NewJoystickPreviewScreen());
+                        break;
+                    case "close":
+                        this.getApplication().stop();
+                        break;
+                    }
                 }
             }
-        }
-        else if (source == this.cancelButton)
-        {
-            this.getStateManager().detach(this);
-            this.getStateManager().attach(new NewJoystickPreviewScreen());
-        }
-        else if (source == this.restartButton)
-        {
-            this.getApplication().stop();
         }
     }
 
@@ -441,11 +501,13 @@ public class CalibrateInputScreen extends BaseAppState
     private void setJoystick(Joystick joystick)
     {
         this.joystick = joystick;
-        this.currentJoystick = new Label(this.joystick.getName());
+        this.currentJoystick = this.guiFont.createLabel(this.joystick.getName());
+        this.currentJoystick.setBox(new Rectangle(0, 0, this.currentJoystick.getLineWidth(), this.currentJoystick.getHeight()));
+        this.currentJoystick.setAlignment(BitmapFont.Align.Center);
         this.gui.attachChild(this.currentJoystick);
         this.calibrationIter = BUTTON_PROMPTS.keySet().iterator();
-        this.currentElement = new Label("");
-        this.currentTime = new Label("");
+        this.currentElement = this.guiFont.createLabel("");
+        this.currentTime = this.guiFont.createLabel("");
 
         this.currentStage = PromptStage.BUTTON;
         calibrateNextButton();
@@ -473,12 +535,12 @@ public class CalibrateInputScreen extends BaseAppState
                 this.calibrateNextButton();
                 return;
             }
-            this.mainOptions.clearChildren();
-            this.mainOptions.addChild(new Label("Press the"));
-            this.mainOptions.addChild(
-                    new Label(BUTTON_PROMPTS.get(this.currentButton)));
-            this.mainOptions.addChild(this.skipButton);
-            this.mainOptions.addChild(this.cancelButton);
+            this.mainOptions.detachAllChildren();
+            this.mainOptions.attachChild(this.guiFont.createLabel("Press the"));
+            this.mainOptions.attachChild(this.guiFont
+                    .createLabel(BUTTON_PROMPTS.get(this.currentButton)));
+            this.mainOptions.attachChild(this.skipButton);
+            this.mainOptions.attachChild(this.cancelButton);
             this.gamepad.setButtonValue(this.currentButton, true);
             this.resize();
         }
@@ -574,13 +636,13 @@ public class CalibrateInputScreen extends BaseAppState
 
         if (this.currentButton != null)
         {
-            this.mainOptions.clearChildren();
-            this.mainOptions.addChild(new Label("Press the"));
-            this.mainOptions.addChild(new Label(
+            this.mainOptions.detachAllChildren();
+            this.mainOptions.attachChild(this.guiFont.createLabel("Press the"));
+            this.mainOptions.attachChild(this.guiFont.createLabel(
                     (this.currentBias ? "Positive " : "Negative ") +
                             AXIS_PROMPTS.get(this.currentButton)));
-            this.mainOptions.addChild(this.skipButton);
-            this.mainOptions.addChild(this.cancelButton);
+            this.mainOptions.attachChild(this.skipButton);
+            this.mainOptions.attachChild(this.cancelButton);
 
             // Updates the display
             switch (this.currentButton)
@@ -653,16 +715,17 @@ public class CalibrateInputScreen extends BaseAppState
             {
                 if (!CALIBRATION_FILE.createNewFile())
                 {
-                    throw new RuntimeException("Could not create calibration file.");
+                    throw new IOException(
+                            "Could not create calibration file.");
                 }
             }
             catch (IOException ioe)
             {
-                this.introCont.clearChildren();
-                this.introCont.addChild(
-                        new Label("Could not create Calibration File:"));
-                this.introCont.addChild(this.cancelButton);
-                this.introCont.addChild(new Label("Error Details:"));
+                this.introCont.detachAllChildren();
+                this.introCont.attachChild(
+                        this.guiFont.createLabel("Could not create Calibration File:"));
+                this.introCont.attachChild(this.cancelButton);
+                this.introCont.attachChild(this.guiFont.createLabel("Error Details:"));
                 this.listStack(this.introCont, ioe, 0);
                 this.gui.attachChild(this.introCont);
                 this.resize();
@@ -675,7 +738,7 @@ public class CalibrateInputScreen extends BaseAppState
         }
         catch (IOException e)
         {
-            logger.error("Could not load configuration file.", e);
+            logger.error("Could not load calibration file", e);
         }
         finally
         {
@@ -707,27 +770,27 @@ public class CalibrateInputScreen extends BaseAppState
                     CALIBRATION_FILE))
             {
                 props.store(output, "Joystick Calibration File");
+                this.introCont.detachAllChildren();
+                this.introCont.attachChild(
+                        this.guiFont.createLabel("Calibration completed successfully."));
+                this.introCont.attachChild(
+                        this.guiFont.createLabel("Close the application and restart to load"));
+                this.introCont.attachChild(this.guiFont.createLabel("the new settings."));
+                this.introCont.attachChild(this.restartButton);
+                this.gui.attachChild(this.introCont);
+                this.resize();
             }
             catch (IOException ioe)
             {
-                this.introCont.clearChildren();
-                this.introCont.addChild(
-                        new Label("Could not create Calibration File:"));
-                this.introCont.addChild(this.cancelButton);
-                this.introCont.addChild(new Label("Error Details:"));
+                this.introCont.detachAllChildren();
+                this.introCont.attachChild(
+                        this.guiFont.createLabel("Could not create Calibration File:"));
+                this.introCont.attachChild(this.cancelButton);
+                this.introCont.attachChild(this.guiFont.createLabel("Error Details:"));
                 this.listStack(this.introCont, ioe, 0);
                 this.gui.attachChild(this.introCont);
                 this.resize();
             }
-            this.introCont.clearChildren();
-            this.introCont
-                    .addChild(new Label("Calibration completed successfully."));
-            this.introCont.addChild(
-                    new Label("Close the application and restart to load"));
-            this.introCont.addChild(new Label("the new settings."));
-            this.introCont.addChild(this.restartButton);
-            this.gui.attachChild(this.introCont);
-            this.resize();
         }
     }
 
@@ -738,25 +801,26 @@ public class CalibrateInputScreen extends BaseAppState
      * @param depth - How many levels of exceptions throwing exceptions we
      *              are in. This is for recursively calling the method.
      */
-    private void listStack(Container errorCont, Throwable error, int depth)
+    private void listStack(Node errorCont, Throwable error, int depth)
     {
-        StringBuilder depthStringBuilder = new StringBuilder();
-        for (int i = 0; i < depth; i++)
+        StringBuilder errorBuilder = new StringBuilder();
+        Throwable cause = error;
+        while (cause != null)
         {
-            depthStringBuilder.append("\t");
+            errorBuilder.append(error.getClass().getName());
+            errorBuilder.append(": ");
+            errorBuilder.append(error.getMessage());
+            errorBuilder.append('\n');
+            for (StackTraceElement stack : error.getStackTrace())
+            {
+                errorBuilder.append('\t');
+                errorBuilder.append(stack.toString());
+                errorBuilder.append('\n');
+            }
+            errorBuilder.append('\n');
+            cause = error.getCause();
         }
-        String depthString = depthStringBuilder.toString();
-
-        errorCont.addChild(new Label(depthString + error.getMessage()));
-        for (StackTraceElement stack : error.getStackTrace())
-        {
-            errorCont
-                    .addChild(new Label(depthString + "\t" + stack.toString()));
-        }
-        if (error.getCause() != null)
-        {
-            this.listStack(errorCont, error.getCause(), depth + 1);
-        }
+        errorCont.attachChild(this.guiFont.createLabel(errorBuilder.toString()));
     }
 
     @Override
