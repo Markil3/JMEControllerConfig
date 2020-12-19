@@ -689,6 +689,7 @@ public class JoystickPreviewScreen extends BaseAppState
         {
             this.gamepadHeaders[i] = GUIUtils.createButton(
                     this.getApplication().getAssetManager(), this.guiFont,
+                    this.getApplication().getContext().getTouchInput() != null,
                     "gamepad" + i, "Gamepad " +
                             this.getApplication().getInputManager()
                                     .getJoysticks()[i].getJoyId());
@@ -741,6 +742,7 @@ public class JoystickPreviewScreen extends BaseAppState
      */
     private void setLabels(Joystick joy)
     {
+        int offset = this.getApplication().getContext().getTouchInput() != null ? 10: 0;
         /*
          * Removes the old labels.
          */
@@ -761,9 +763,11 @@ public class JoystickPreviewScreen extends BaseAppState
             /*
              * The name of the gamepad.
              */
-            this.labels[joy.getJoyId()][0] = this.guiFont.createLabel(
-                    "Gamepad " + joy.getJoyId() + ": " + joy.getName());
-            this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25, 0);
+//            this.labels[joy.getJoyId()][0] = this.guiFont.createLabel(
+//                    "Gamepad " + joy.getJoyId() + ": " + joy.getName());
+            this.labels[joy.getJoyId()][0] =
+                    this.guiFont.createLabel(joy.getName());
+            this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25 - offset, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][0]);
             /*
@@ -771,11 +775,12 @@ public class JoystickPreviewScreen extends BaseAppState
              * index of the axis, its given name, its logical ID after
              * joystick remapping has occurred, and the axis index again.
              * TODO - Whenever I add the " Gamepad X: " part to the previous
-             *  label, this one displays all funky.
+             *  label, this one displays all funky. Also, the lag gets really
+             *  bad.
              */
             this.labels[joy.getJoyId()][1] = this.guiFont
                     .createLabel("Axis Index: Axis Name (logical ID, axis ID)");
-            this.labels[joy.getJoyId()][1].setLocalTranslation(20, -50, 0);
+            this.labels[joy.getJoyId()][1].setLocalTranslation(20, -50 - offset, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][1]);
             /*
@@ -793,7 +798,7 @@ public class JoystickPreviewScreen extends BaseAppState
                             (i) + ": " + axis.getName() + " (" +
                                     axis.getLogicalId() + ", " +
                                     axis.getAxisId() + "): ");
-                    label.setLocalTranslation(20, -25 * (i + 3), 0);
+                    label.setLocalTranslation(20, -25 * (i + 3) - offset, 0);
                     this.labels[joy.getJoyId()][i * 2 + 1] = label;
 
                     /*
@@ -835,7 +840,7 @@ public class JoystickPreviewScreen extends BaseAppState
             this.labels[joy.getJoyId()][firstButtonIndex].setLocalTranslation(
                     this.getScreenSize().x -
                             this.labels[joy.getJoyId()][firstButtonIndex]
-                                    .getLineWidth(), -50, 0);
+                                    .getLineWidth(), -50 - offset, 0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][firstButtonIndex]);
 
@@ -855,7 +860,7 @@ public class JoystickPreviewScreen extends BaseAppState
                     BitmapText label2 = this.guiFont.createLabel("false");
                     label2.setLocalTranslation(
                             this.getScreenSize().x - label2.getLineWidth(),
-                            -25 * (i + 3), 0);
+                            -25 * (i + 3) - offset, 0);
 
                     /*
                      * The name and information for the button.
@@ -914,7 +919,7 @@ public class JoystickPreviewScreen extends BaseAppState
             for (int i = 0, l = this.gamepadHeaders.length; i < l; i++)
             {
                 button = this.gamepadHeaders[i];
-                button.setLocalTranslation(128 * i, 0, 0);
+                button.setLocalTranslation((this.getApplication().getContext().getTouchInput() != null ? 192 : 128) * i, 0, 0);
             }
         }
         if (this.gamepadView != null)

@@ -42,18 +42,24 @@ public class GUIUtils
      * to trigger events.
      * @param assets - The application asset manager.
      * @param guiFont - The font to use for the button.
+     * @param isMobile - Whether or not the mobile size increase should be used.
      * @param id - The button ID. This is used to identify which button was
      *           pressed later on.
      * @param content - The text that will display in the button.
      * @return A node containing the button elements.
      */
     public static Node createButton(AssetManager assets, BitmapFont guiFont,
-                                    String id, String content)
+                                    boolean isMobile, String id, String content)
     {
+        final float MOBILE_SIZE = 30F;
         BitmapText buttonText;
         Geometry buttonBackground;
         Node button = new Node();
         buttonText = guiFont.createLabel(content);
+        if (isMobile)
+        {
+            buttonText.setSize(MOBILE_SIZE);
+        }
         buttonText.setUserData(BUTTON_ID, id);
         buttonText.setBox(new Rectangle(0, 0, buttonText.getLineWidth(),
                 buttonText.getLineHeight()));
@@ -78,7 +84,7 @@ public class GUIUtils
     /**
      * Call this method from a mouse listener to search the provided node for
      * any buttons created with
-     * {@link #createButton(AssetManager, BitmapFont, String, String)} and
+     * {@link #createButton(AssetManager, BitmapFont, boolean, String, String)} and
      * returns their ID.
      * @param gui - The GUI to search.
      * @param cursor - The position of the mouse cursor.
@@ -112,7 +118,7 @@ public class GUIUtils
 
         results = new CollisionResults();
         ray = new Ray(new Vector3f(cursor.x, cursor.y, 0),
-                new Vector3f(cursor.x, cursor.y, 1));
+                new Vector3f(0, 0, 1));
         gui.collideWith(ray, results);
         for (CollisionResult result : results)
         {
@@ -190,9 +196,9 @@ public class GUIUtils
             {
                 Quad quad = ((Quad) ((Geometry) ((Node) node).getChild(0))
                         .getMesh());
-                    node.setLocalTranslation(-quad.getWidth() / 2F,
-                            -totalHeight - 10, 0);
-                    totalHeight += quad.getHeight() + 10;
+                node.setLocalTranslation(-quad.getWidth() / 2F,
+                        -totalHeight - 10, 0);
+                totalHeight += quad.getHeight() + 10;
             }
         }
         return totalHeight;

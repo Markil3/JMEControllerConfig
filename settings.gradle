@@ -7,6 +7,7 @@
  * Detailed information about configuring a multi-project build in Gradle can be found
  * in the user guide at https://docs.gradle.org/4.4.1/userguide/multi_project_builds.html
  */
+include ':jmecontrollerconfig'
 
 /*
 // To declare projects as part of a multi-project build use the 'include' method
@@ -19,3 +20,4 @@ rootProject.name = 'JMEControllerConfig'
 include "library"
 include "desktop"
 include "desktopLegacy"
+include "android"

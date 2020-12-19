@@ -181,7 +181,7 @@ public class CalibrateInputScreen extends BaseAppState
         this.introCont.attachChild(text);
 
         this.startButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
                         "start", "Start");
 //        this.startButton.addClickCommands(this);
         this.introCont.attachChild(this.startButton);
@@ -193,16 +193,16 @@ public class CalibrateInputScreen extends BaseAppState
                         "on the controller you want to calibrate."));
 
         this.skipButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
                         "skip", "Skip");
 
         this.cancelButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
                         "cancel", "Cancel");
         this.introCont.attachChild(this.cancelButton);
 
         this.restartButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
                         "close", "Close Application");
 
         this.gui.attachChild(this.introCont);

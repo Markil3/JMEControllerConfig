@@ -160,16 +160,36 @@ public class Main extends SimpleApplication implements ActionListener
     @Override
     public void initialize()
     {
+        final File[] possibleGameDirs =
+                new File[]{new File(System.getProperty("user.dir")),
+                        new File(System.getProperty("user.home")),
+                        JmeSystem.getStorageFolder(
+                                JmeSystem.StorageFolderType.External)};
+        int i, l;
         if (GAME_FOLDER == null)
         {
-            GAME_FOLDER = new File(System.getProperty("user.dir"));
-            if (!GAME_FOLDER.isDirectory())
+            for (i = 0, l = possibleGameDirs.length; i < l; i++)
             {
-                if (!GAME_FOLDER.mkdir())
+                GAME_FOLDER = possibleGameDirs[i];
+                if (!GAME_FOLDER.isDirectory())
                 {
-                    throw new RuntimeException(
-                            "Could not create game directory folder.");
+                    if (!GAME_FOLDER.mkdir())
+                    {
+                        logger.warn("Cannot make " + GAME_FOLDER);
+                        continue;
+                    }
                 }
+                if (!GAME_FOLDER.canWrite())
+                {
+                    logger.warn("Cannot write to " + GAME_FOLDER);
+                    continue;
+                }
+                break;
+            }
+            if (i == l)
+            {
+                throw new RuntimeException(
+                        "Could not create game directory folder.");
             }
         }
         /*
@@ -184,19 +204,23 @@ public class Main extends SimpleApplication implements ActionListener
     {
         this.calibrateButton =
                 GUIUtils.createButton(this.getAssetManager(), this.guiFont,
-                        "calibrate", "Calibrate Gamepad");
-        this.calibrateButton.setLocalTranslation((this.getCamera().getWidth() -
-                ((BitmapText) this.calibrateButton.getChild(1)).getLineWidth() -
-                10) / 2F, this.getCamera().getHeight(), 0);
+                        this.getContext().getTouchInput() != null, "calibrate",
+                        "Calibrate Gamepad");
     }
 
     @Override
     public void simpleUpdate(float tpf)
     {
-        JoystickPreviewScreen screen = this.getStateManager().getState(JoystickPreviewScreen.class);
+        JoystickPreviewScreen screen =
+                this.getStateManager().getState(JoystickPreviewScreen.class);
         if (this.calibrateButton.getParent() == null && screen != null)
         {
             this.guiNode.attachChild(this.calibrateButton);
+            this.calibrateButton.setLocalTranslation(
+                    (this.getCamera().getWidth() -
+                            ((BitmapText) this.calibrateButton.getChild(1))
+                                    .getLineWidth() - 10) / 2F,
+                    this.getCamera().getHeight(), 0);
             this.inputManager.addListener(this, screen.CLICK_MAPPING);
         }
         else if (this.calibrateButton.getParent() != null && screen == null)
@@ -210,17 +234,43 @@ public class Main extends SimpleApplication implements ActionListener
     public void onAction(String name, boolean isPressed, float tpf)
     {
         String buttonId;
-        JoystickPreviewScreen screen = this.getStateManager().getState(JoystickPreviewScreen.class);
+        JoystickPreviewScreen screen =
+                this.getStateManager().getState(JoystickPreviewScreen.class);
         if (screen != null && name.equals(screen.CLICK_MAPPING))
         {
             buttonId = GUIUtils.handleButtonPress(this.calibrateButton,
-                    this.getInputManager().getCursorPosition(),
-                    isPressed);
+                    this.getInputManager().getCursorPosition(), isPressed);
             if (!isPressed && "calibrate".equals(buttonId))
             {
                 this.getStateManager().detach(screen);
-                this.getStateManager().attach(new CalibrateInputScreen(CALIBRATION_FILE));
+                this.getStateManager()
+                        .attach(new CalibrateInputScreen(CALIBRATION_FILE));
             }
         }
+    }
+
+    @Override
+    public void restart()
+    {
+        super.restart();
+        this.enqueue(() -> {
+            JoystickPreviewScreen previewScreen = this.getStateManager()
+                    .getState(JoystickPreviewScreen.class);
+            CalibrateInputScreen calibrateScreen =
+                    this.getStateManager().getState(CalibrateInputScreen.class);
+            if (previewScreen != null)
+            {
+                previewScreen.resize();
+            }
+            if (calibrateScreen != null)
+            {
+                calibrateScreen.resize();
+            }
+            this.calibrateButton.setLocalTranslation(
+                    (this.getCamera().getWidth() -
+                            ((BitmapText) this.calibrateButton.getChild(1))
+                                    .getLineWidth() - 10) / 2F,
+                    this.getCamera().getHeight(), 0);
+        });
     }
 }
