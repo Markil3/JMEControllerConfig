@@ -10,6 +10,8 @@ Download the [latest release build](https://github.com/Markil3/JMEControllerConf
 
 If you need examples as to how to implement these, see the :desktop submodule.
 
+If you wish to change the colors of the buttons, simply change the color values in the markil3.controller.GUIUtils class.
+
 ### Requirements
 * Java 8+
 * jMonkeyEngine 3.3+
