@@ -52,8 +52,9 @@ import static markil3.controller.JoystickPreviewScreen.START;
 
 /**
  * Provides a series of prompts that will build a controller calibration file.
+ *
  * @author Markil3
- * @version 1.1
+ * @version 1.2
  */
 public class CalibrateInputScreen extends BaseAppState
         implements RawInputListener, ActionListener
@@ -143,14 +144,17 @@ public class CalibrateInputScreen extends BaseAppState
      */
     private boolean triggers2;
     private HashMap<String, Object> maps = new HashMap<>();
+    private HashMap<String, float[]> rangeMaps = new HashMap<>();
     private HashMap<String, Boolean> mapBias = new HashMap<>();
 
-    private HashMap<Object, Float> defaultValues = new HashMap<>();
+    private HashMap<Object, float[]> defaultValues = new HashMap<>();
 
     private boolean clear;
+    private float greatestVal, smallestVal;
 
     /**
      * Creates a screen for calibrating and remapping a game controller.
+     *
      * @param calibrationFile - The file to store the results in.
      */
     public CalibrateInputScreen(File calibrationFile)
@@ -277,7 +281,7 @@ public class CalibrateInputScreen extends BaseAppState
                     if (this.focusedJoyElement instanceof JoystickButton)
                     {
                         this.maps.put(this.currentBias ? DPAD_RIGHT :
-                                DPAD_LEFT, this.focusedJoyElement);
+                                      DPAD_LEFT, this.focusedJoyElement);
                     }
                     else
                     {
@@ -302,6 +306,17 @@ public class CalibrateInputScreen extends BaseAppState
                     break;
                 }
                 this.mapBias.put(this.currentButton, this.focusValue > 0);
+                if (this.focusedJoyElement instanceof JoystickAxis)
+                {
+                    if (!this.rangeMaps.containsKey(this.currentButton))
+                    {
+                        this.rangeMaps.put(this.currentButton, new float[2]);
+                    }
+                    this.rangeMaps.get(this.currentButton)[this.currentBias ?
+                                                           1 :
+                                                           0] =
+                            this.greatestVal;
+                }
                 this.timeHeld = -1;
                 this.focusedJoyElement = null;
                 this.focusValue = 0;
@@ -356,6 +371,7 @@ public class CalibrateInputScreen extends BaseAppState
 
     /**
      * Scales and positions elements of this screen.
+     *
      * @param width - The width to scale to.
      * @param height - The height to scale to.
      */
@@ -449,8 +465,9 @@ public class CalibrateInputScreen extends BaseAppState
 
     /**
      * Set which joystick to use for calibration. This change affects all
-     * joysticks sharing the same name, so you don't have to run this for
-     * every controller you have if some of them are identical.
+     * joysticks sharing the same name, so you don't have to run this for every
+     * controller you have if some of them are identical.
+     *
      * @param joystick - The joystick to use for calibration.
      */
     private void setJoystick(Joystick joystick)
@@ -677,17 +694,18 @@ public class CalibrateInputScreen extends BaseAppState
     }
 
     /**
-     * Saves the calibration settings to the file and prompts for an
-     * application restart.
+     * Saves the calibration settings to the file and prompts for an application
+     * restart.
      */
     private void recordFile()
     {
         /*
          * Enable this in JME 3.4.
          */
-        boolean perComponentEnabled = true;
+        boolean perComponentEnabled = false;
         JoystickAxis axis;
         JoystickButton button;
+        float[] range;
         Properties props = new Properties();
 
         this.introCont.removeFromParent();
@@ -709,7 +727,7 @@ public class CalibrateInputScreen extends BaseAppState
                 this.introCont.attachChild(this.cancelButton);
                 this.introCont.attachChild(
                         this.guiFont.createLabel("Error Details:"));
-                this.listStack(this.introCont, ioe, 0);
+                this.listStack(this.introCont, ioe);
                 this.gui.attachChild(this.introCont);
                 this.resize();
             }
@@ -734,7 +752,8 @@ public class CalibrateInputScreen extends BaseAppState
                 if (calibrationEntry.getValue() instanceof JoystickButton)
                 {
                     button = (JoystickButton) calibrationEntry.getValue();
-                    if (!button.getName().equals(calibrationEntry.getKey()) || clear)
+                    if (!button.getName()
+                            .equals(calibrationEntry.getKey()) || clear)
                     {
                         props.put((perComponentEnabled ? "button." : "") +
                                 this.joystick.getName() + "." +
@@ -744,11 +763,21 @@ public class CalibrateInputScreen extends BaseAppState
                 else if (calibrationEntry.getValue() instanceof JoystickAxis)
                 {
                     axis = (JoystickAxis) calibrationEntry.getValue();
-                    if (!axis.getName().equals(calibrationEntry.getKey()) || clear)
+                    if (!axis.getName()
+                            .equals(calibrationEntry.getKey()) || clear)
                     {
+                        range = this.rangeMaps.get(calibrationEntry.getKey());
+//                        defaultValue = this.defaultValues.get(axis);
                         props.put((perComponentEnabled ? "axis." : "") +
                                         this.joystick.getName() + "." + axis.getName(),
-                                calibrationEntry.getKey());
+                                calibrationEntry.getKey() + (perComponentEnabled && range != null ?
+                                                             ("[" + (range[0] != 0 ?
+                                                                     (1.0F / range[0]) :
+                                                                     0) + "," + (
+                                                                     range[1] != 0 ?
+                                                                     (1.0F / range[1]) :
+                                                                     0) + "]") :
+                                                             ""));
                     }
                 }
                 elements.remove(calibrationEntry.getValue());
@@ -796,7 +825,7 @@ public class CalibrateInputScreen extends BaseAppState
                 this.introCont.attachChild(this.cancelButton);
                 this.introCont.attachChild(
                         this.guiFont.createLabel("Error Details:"));
-                this.listStack(this.introCont, ioe, 0);
+                this.listStack(this.introCont, ioe);
                 this.gui.attachChild(this.introCont);
                 this.resize();
             }
@@ -805,12 +834,12 @@ public class CalibrateInputScreen extends BaseAppState
 
     /**
      * Display an error stack trace on the screen.
+     *
      * @param errorCont - The container to use for the error.
      * @param error - The error.
-     * @param depth - How many levels of exceptions throwing exceptions we
-     *              are in. This is for recursively calling the method.
+     * in. This is for recursively calling the method.
      */
-    private void listStack(Node errorCont, Throwable error, int depth)
+    private void listStack(Node errorCont, Throwable error)
     {
         StringBuilder errorBuilder = new StringBuilder();
         Throwable cause = error;
@@ -836,12 +865,14 @@ public class CalibrateInputScreen extends BaseAppState
     @Override
     public void onJoyAxisEvent(JoyAxisEvent evt)
     {
+        float[] defaultValue = this.defaultValues.get(evt.getAxis());
 //        this.setJoystick(evt.getAxis().getJoystick());
         if (this.joystick != null)
         {
+            // TODO - Use getRawValue() in 3.4
             if (evt.getValue() != 0 && Math.abs(evt.getValue()) > 0.5 &&
-                    (this.defaultValues.get(evt.getAxis()) == null || Math.abs(
-                            this.defaultValues.get(evt.getAxis()) -
+                    (defaultValue == null || Math.abs(
+                            defaultValue[0] -
                                     evt.getValue()) > 0.001F))
             {
                 if (this.focusedJoyElement != evt.getAxis() ||
@@ -850,12 +881,25 @@ public class CalibrateInputScreen extends BaseAppState
                     this.focusedJoyElement = evt.getAxis();
                     this.timeHeld = 0;
                     this.focusValue = evt.getValue();
+                    this.greatestVal = 0;
+                    this.smallestVal = evt.getValue();
                     this.currentElement.setText(
                             (this.focusValue > 0 ? "+ " : "- ") +
                                     evt.getAxis().getName());
                     this.gui.attachChild(this.currentElement);
                     this.gui.attachChild(this.currentTime);
                     this.resize();
+                }
+                else
+                {
+                    if (Math.abs(evt.getValue()) < Math.abs(this.smallestVal))
+                    {
+                        this.smallestVal = evt.getValue();
+                    }
+                    else if (Math.abs(evt.getValue()) > Math.abs(this.greatestVal))
+                    {
+                        this.greatestVal = evt.getValue();
+                    }
                 }
             }
             else
@@ -872,8 +916,20 @@ public class CalibrateInputScreen extends BaseAppState
         }
         else
         {
-            this.defaultValues.put(evt.getAxis(), evt.getValue());
+            defaultValue = new float[]{evt.getValue(), 0, 0};
+            this.defaultValues.put(evt.getAxis(), defaultValue);
         }
+//        if (defaultValue != null)
+//        {
+//            if (evt.getValue() < defaultValue[1])
+//            {
+//                defaultValue[1] = evt.getValue();
+//            }
+//            if (evt.getValue() > defaultValue[2])
+//            {
+//                defaultValue[2] = evt.getValue();
+//            }
+//        }
     }
 
     @Override
@@ -883,7 +939,7 @@ public class CalibrateInputScreen extends BaseAppState
         {
             if (evt.isPressed() &&
                     (this.defaultValues.get(evt.getButton()) == null ||
-                            Math.abs(this.defaultValues.get(evt.getButton()) -
+                            Math.abs(this.defaultValues.get(evt.getButton())[0] -
                                     1F) > 0.001F))
             {
                 if (this.focusedJoyElement != evt.getButton() ||
@@ -913,7 +969,8 @@ public class CalibrateInputScreen extends BaseAppState
         else
         {
             this.defaultValues
-                    .put(evt.getButton(), evt.isPressed() ? 1.0F : 0.0F);
+                    .put(evt.getButton(),
+                            new float[]{evt.isPressed() ? 1.0F : 0.0F, 0, 0});
         }
         if (!evt.isPressed())
         {
