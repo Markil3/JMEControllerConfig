@@ -23,7 +23,7 @@ If you wish to change the colors of the buttons, simply change the color values 
     * jme3-lwjgl3 or jme3-lwjgl (if running as standalone)
     * jme3-android (if running on Android)
     * jme3-android-natives (if running on Android)
-* slf4j-api 1.7.15+
+* slf4j-api 1.7.30+
 
 ## Building from Source
 To build from source, start by downloading the source from github. If you have the [git command line tool](https://git-scm.com/downloads) installed, the following line will download the git repository from github:
@@ -45,7 +45,7 @@ If you want to test this without implementing it in your software, simply downlo
 
 This will run a bare-bones version dedicated to the utility using LWJGL3.
 
-Alternativly, you can use the :desktopLegacy subproject for LWJGL2, or the :android subproject for testing on Android.
+Alternatively, you can use the :desktopLegacy subproject for LWJGL2, or the :android subproject for testing on Android.
 
 ## Troubleshooting
 

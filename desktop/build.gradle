@@ -20,15 +20,41 @@ plugins {
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
+//def lwjglVersion = '3.2.3'
+
 dependencies {
     // Logging
-    implementation "org.slf4j:slf4j-api:1.7.15"
+    implementation "org.slf4j:slf4j-api:1.7.30"
     implementation "org.slf4j:slf4j-simple:1.7.5"
 
     implementation project(':library')
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-desktop:${jme3.version}"
     implementation "${jme3.g}:jme3-lwjgl3:${jme3.version}"
+//    implementation rootProject.files('libs/jme3-core.jar')
+//    implementation rootProject.files('libs/jme3-desktop.jar')
+//    implementation rootProject.files('libs/jme3-lwjgl3.jar')
+//    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+//    implementation "org.lwjgl:lwjgl-glfw:${lwjglVersion}"
+//    implementation "org.lwjgl:lwjgl-jemalloc:${lwjglVersion}"
+//    implementation "org.lwjgl:lwjgl-openal:${lwjglVersion}"
+//    implementation "org.lwjgl:lwjgl-opencl:${lwjglVersion}"
+//    implementation "org.lwjgl:lwjgl-opengl:${lwjglVersion}"
+//    runtime "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+//    runtime "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+//    runtime "org.lwjgl:lwjgl:${lwjglVersion}:natives-macos"
+//    runtime "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-windows"
+//    runtime "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-linux"
+//    runtime "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-macos"
+//    runtime "org.lwjgl:lwjgl-jemalloc:${lwjglVersion}:natives-windows"
+//    runtime "org.lwjgl:lwjgl-jemalloc:${lwjglVersion}:natives-linux"
+//    runtime "org.lwjgl:lwjgl-jemalloc:${lwjglVersion}:natives-macos"
+//    runtime "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-windows"
+//    runtime "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-linux"
+//    runtime "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-macos"
+//    runtime "org.lwjgl:lwjgl-openal:${lwjglVersion}:natives-windows"
+//    runtime "org.lwjgl:lwjgl-openal:${lwjglVersion}:natives-linux"
+//    runtime "org.lwjgl:lwjgl-openal:${lwjglVersion}:natives-macos"
 }
 
 // Define the main class for the application
@@ -38,7 +64,7 @@ mainClassName = 'markil3.controller.Main'
  * TODO - The default zipped distributions are a bit of a mess.
  */
 jar {
-    baseName rootProject.name
+    baseName rootProject.name + "-desktop"
     version rootProject.version
     manifest {
         attributes "Main-Class": mainClassName,

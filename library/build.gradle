@@ -18,11 +18,13 @@ targetCompatibility = "1.8"
 
 dependencies {
     // Logging
-    implementation "org.slf4j:slf4j-api:1.7.15"
+    implementation "org.slf4j:slf4j-api:1.7.30"
     implementation "org.slf4j:slf4j-simple:1.7.5"
 
     implementation "${jme3.g}:jme3-core:${jme3.version}"
     implementation "${jme3.g}:jme3-testdata:${jme3.version}"
+//    implementation rootProject.files('libs/jme3-core.jar')
+//    implementation rootProject.files('libs/jme3-testdata.jar')
 }
 
 processResources {

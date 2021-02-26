@@ -1,10 +1,8 @@
 package markil3.controller;
 
-import android.content.res.Configuration;
 import android.os.Bundle;
 
 import com.jme3.app.AndroidHarness;
-import com.jme3.system.AppSettings;
 
 import java.util.logging.Level;
 import java.util.logging.LogManager;

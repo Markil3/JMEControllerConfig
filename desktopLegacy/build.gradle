@@ -22,9 +22,18 @@ plugins {
 
 dependencies {
     implementation(project(':desktop')) {
-        exclude group: jme3.g, module: "jme3-lwjgl3"
+        exclude module: "jme3-lwjgl3"
+        exclude group: "org.lwjgl"
     }
     implementation "${jme3.g}:jme3-lwjgl:${jme3.version}"
+//    implementation rootProject.files('libs/jme3-lwjgl.jar')
+//    implementation 'org.lwjgl.lwjgl:lwjgl:2.9.3'
+//    /*
+//     * Upgrades the default jinput-2.0.5 to jinput-2.0.9 to fix a bug with gamepads on Linux.
+//     * See https://hub.jmonkeyengine.org/t/linux-gamepad-input-on-jme3-lwjgl-splits-input-between-two-logical-gamepads
+//     */
+//    implementation 'net.java.jinput:jinput:2.0.9'
+//    implementation 'net.java.jinput:jinput:2.0.9:natives-all'
 }
 
 // Define the main class for the application
