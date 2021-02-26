@@ -260,7 +260,7 @@ public class CalibrateInputScreen extends BaseAppState
                 case JoystickAxis.POV_X:
                     if (this.focusedJoyElement instanceof JoystickButton)
                     {
-                        this.maps.put(this.focusValue > 0 ? DPAD_RIGHT :
+                        this.maps.put(this.currentBias ? DPAD_RIGHT :
                                 DPAD_LEFT, this.focusedJoyElement);
                     }
                     else
@@ -272,7 +272,7 @@ public class CalibrateInputScreen extends BaseAppState
                 case JoystickAxis.POV_Y:
                     if (this.focusedJoyElement instanceof JoystickButton)
                     {
-                        this.maps.put(this.focusValue > 0 ? DPAD_UP : DPAD_DOWN,
+                        this.maps.put(this.currentBias ? DPAD_UP : DPAD_DOWN,
                                 this.focusedJoyElement);
                     }
                     else
