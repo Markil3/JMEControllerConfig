@@ -804,7 +804,7 @@ public class JoystickPreviewScreen extends BaseAppState
                     /*
                      * The current value of the axis.
                      */
-                    BitmapText label2 = this.guiFont.createLabel("-1.0");
+                    BitmapText label2 = this.guiFont.createLabel("0.0");
                     label2.setLocalTranslation(label.getLocalTranslation()
                             .add(label.getLineWidth(), 0, 0));
                     this.labels[joy.getJoyId()][i * 2 + 2] = label2;
