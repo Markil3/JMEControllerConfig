@@ -47,12 +47,12 @@ import java.util.Map;
 
 /**
  * Adding this app state will display a GUI screen showing the controllers
- * connected and information on what buttons are pressed. It is primarily
- * useful for debugging controllers.
+ * connected and information on what buttons are pressed. It is primarily useful
+ * for debugging controllers.
  * <p>Note that this class relies on three textures not found in the default
  * JME core: "Interface/Joystick/gamepad-buttons.png",
- * "Interface/Joystick/gamepad-frame.png," and
- * "Interface/Joystick/gamepad-stick.png." These textures can be obtained
+ * "Interface/Joystick/gamepad-frame.png,"
+ * and "Interface/Joystick/gamepad-stick.png." These textures can be obtained
  * from the org.jmonkeyengine:jme3-testdata library.</p>
  *
  * @author Markil 3
@@ -61,6 +61,7 @@ import java.util.Map;
  * @author Paul Speed
  * @author dokthar
  * @author Stephen Gold
+ * @version 1.2
  */
 public class JoystickPreviewScreen extends BaseAppState
         implements RawInputListener, JoystickConnectionListener, ActionListener
@@ -87,13 +88,13 @@ public class JoystickPreviewScreen extends BaseAppState
     public static final String L1 = JoystickButton.BUTTON_4;
     public static final String R1 = JoystickButton.BUTTON_5;
     /**
-     * Some gamepads (Xbox controllers notable) will use
-     * {@link JoystickAxis#LEFT_TRIGGER} instead.
+     * Some gamepads (Xbox controllers notable) will use {@link
+     * JoystickAxis#LEFT_TRIGGER} instead.
      */
     public static final String L2 = JoystickButton.BUTTON_6;
     /**
-     * Some gamepads (Xbox controllers notable) will use
-     * {@link JoystickAxis#RIGHT_TRIGGER} instead.
+     * Some gamepads (Xbox controllers notable) will use {@link
+     * JoystickAxis#RIGHT_TRIGGER} instead.
      */
     public static final String R2 = JoystickButton.BUTTON_7;
     public static final String SELECT = JoystickButton.BUTTON_8;
@@ -125,8 +126,8 @@ public class JoystickPreviewScreen extends BaseAppState
     final String CLICK_MAPPING = "previewButtonClick";
 
     /**
-     * This node serves as the center of logic for each gamepad connected to
-     * the computer.
+     * This node serves as the center of logic for each gamepad connected to the
+     * computer.
      */
     static class GamepadView extends Node
     {
@@ -261,7 +262,7 @@ public class JoystickPreviewScreen extends BaseAppState
             }
             else if (axis == axis.getJoystick().getYAxis())
             {
-                setYAxis(-value);
+                setYAxis(value);
             }
             else if (axis == axis.getJoystick().getAxis(JoystickAxis.Z_AXIS))
             {
@@ -280,7 +281,7 @@ public class JoystickPreviewScreen extends BaseAppState
             else if (axis ==
                     axis.getJoystick().getAxis(JoystickAxis.Z_ROTATION))
             {
-                setZRotation(-value);
+                setZRotation(value);
             }
             else if (axis ==
                     axis.getJoystick().getAxis(JoystickAxis.LEFT_TRIGGER))
@@ -467,8 +468,8 @@ public class JoystickPreviewScreen extends BaseAppState
 
             float angle = dir.getAngle();
             float x = FastMath.cos(angle) * length * 10;
-            float y = FastMath.sin(angle) * length * 10;
-            leftStick.setLocalTranslation(xBase + x, yBase + y, 0);
+            float y = FastMath.sin(-angle) * length * 10;
+            leftStick.setLocalTranslation(xBase + x, yBase - y, 0);
 
             xBase = 291;
             dir = new Vector2f(zAxis, zRotation);
@@ -477,8 +478,8 @@ public class JoystickPreviewScreen extends BaseAppState
 
             angle = dir.getAngle();
             x = FastMath.cos(angle) * length * 10;
-            y = FastMath.sin(angle) * length * 10;
-            rightStick.setLocalTranslation(xBase + x, yBase + y, 0);
+            y = FastMath.sin(-angle) * length * 10;
+            rightStick.setLocalTranslation(xBase + x, yBase - y, 0);
         }
     }
 
@@ -531,8 +532,9 @@ public class JoystickPreviewScreen extends BaseAppState
 
         /**
          * Checks to see if the visual displays if the button is pressed.
-         * @return True if the visual displays that the button is pressed,
-         * false otherwise.
+         *
+         * @return True if the visual displays that the button is pressed, false
+         * otherwise.
          */
         public boolean isDown()
         {
@@ -541,6 +543,7 @@ public class JoystickPreviewScreen extends BaseAppState
 
         /**
          * Updates the button to display that it is pressed.
+         *
          * @see #up()
          */
         public void down()
@@ -551,6 +554,7 @@ public class JoystickPreviewScreen extends BaseAppState
 
         /**
          * Updates the button to display that it is not pressed.
+         *
          * @see #down()
          */
         public void up()
@@ -699,8 +703,9 @@ public class JoystickPreviewScreen extends BaseAppState
 
     /**
      * Obtain the size of the screen based on the game camera.
-     * @return The screen size in a two-dimensional float vector. Note that
-     * the numbers will always be integers.
+     *
+     * @return The screen size in a two-dimensional float vector. Note that the
+     * numbers will always be integers.
      */
     private Vector2f getScreenSize()
     {
@@ -738,11 +743,15 @@ public class JoystickPreviewScreen extends BaseAppState
     /**
      * Updates the values of the gamepad labels as buttons and axis are
      * manipulated.
+     *
      * @param joy - The gamepad to update.
      */
     private void setLabels(Joystick joy)
     {
-        int offset = this.getApplication().getContext().getTouchInput() != null ? 10: 0;
+        int offset =
+                this.getApplication().getContext().getTouchInput() != null ?
+                10 :
+                0;
         /*
          * Removes the old labels.
          */
@@ -767,7 +776,9 @@ public class JoystickPreviewScreen extends BaseAppState
 //                    "Gamepad " + joy.getJoyId() + ": " + joy.getName());
             this.labels[joy.getJoyId()][0] =
                     this.guiFont.createLabel(joy.getName());
-            this.labels[joy.getJoyId()][0].setLocalTranslation(20, -25 - offset, 0);
+            this.labels[joy.getJoyId()][0].setLocalTranslation(20,
+                    -25 - offset,
+                    0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][0]);
             /*
@@ -780,7 +791,9 @@ public class JoystickPreviewScreen extends BaseAppState
              */
             this.labels[joy.getJoyId()][1] = this.guiFont
                     .createLabel("Axis Index: Axis Name (logical ID, axis ID)");
-            this.labels[joy.getJoyId()][1].setLocalTranslation(20, -50 - offset, 0);
+            this.labels[joy.getJoyId()][1].setLocalTranslation(20,
+                    -50 - offset,
+                    0);
             this.gamepadCont[joy.getJoyId()]
                     .attachChild(this.labels[joy.getJoyId()][1]);
             /*
@@ -907,6 +920,7 @@ public class JoystickPreviewScreen extends BaseAppState
 
     /**
      * Scales and positions elements of this screen.
+     *
      * @param width - The width to scale to.
      * @param height - The height to scale to.
      */
@@ -919,7 +933,11 @@ public class JoystickPreviewScreen extends BaseAppState
             for (int i = 0, l = this.gamepadHeaders.length; i < l; i++)
             {
                 button = this.gamepadHeaders[i];
-                button.setLocalTranslation((this.getApplication().getContext().getTouchInput() != null ? 192 : 128) * i, 0, 0);
+                button.setLocalTranslation((this.getApplication()
+                                                    .getContext()
+                                                    .getTouchInput() != null ?
+                                            192 :
+                                            128) * i, 0, 0);
             }
         }
         if (this.gamepadView != null)
@@ -1015,8 +1033,9 @@ public class JoystickPreviewScreen extends BaseAppState
     }
 
     /**
-     * Displays which button is which as the user hovers over the button.
-     * TODO - Doesn't trigger.
+     * Displays which button is which as the user hovers over the button. TODO -
+     * Doesn't trigger.
+     *
      * @param evt - Input event data.
      */
     @Override
@@ -1055,6 +1074,7 @@ public class JoystickPreviewScreen extends BaseAppState
 
     /**
      * Triggers the gamepad tab buttons.
+     *
      * @param evt - Input event data.
      */
     @Override
