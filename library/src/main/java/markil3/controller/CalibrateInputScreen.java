@@ -19,7 +19,6 @@ import com.jme3.input.event.KeyInputEvent;
 import com.jme3.input.event.MouseButtonEvent;
 import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.input.event.TouchEvent;
-import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 
@@ -27,6 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -118,6 +118,8 @@ public class CalibrateInputScreen extends BaseAppState
     private Node skipButton;
     private Node cancelButton;
     private Node restartButton;
+    private Node yesButton;
+    private Node noButton;
     private JoystickPreviewScreen.GamepadView gamepad;
 
     private BitmapText currentJoystick;
@@ -144,6 +146,8 @@ public class CalibrateInputScreen extends BaseAppState
     private HashMap<String, Boolean> mapBias = new HashMap<>();
 
     private HashMap<Object, Float> defaultValues = new HashMap<>();
+
+    private boolean clear;
 
     /**
      * Creates a screen for calibrating and remapping a game controller.
@@ -181,8 +185,9 @@ public class CalibrateInputScreen extends BaseAppState
         this.introCont.attachChild(text);
 
         this.startButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
-                        "start", "Start");
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "start",
+                        "Start");
 //        this.startButton.addClickCommands(this);
         this.introCont.attachChild(this.startButton);
 
@@ -193,17 +198,28 @@ public class CalibrateInputScreen extends BaseAppState
                         "on the controller you want to calibrate."));
 
         this.skipButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
-                        "skip", "Skip");
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "skip",
+                        "Skip");
 
         this.cancelButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
-                        "cancel", "Cancel");
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "cancel",
+                        "Cancel");
         this.introCont.attachChild(this.cancelButton);
 
         this.restartButton =
-                GUIUtils.createButton(app.getAssetManager(), this.guiFont, app.getContext().getTouchInput() != null,
-                        "close", "Close Application");
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "close",
+                        "Close Application");
+        this.yesButton =
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "yes",
+                        "Yes");
+        this.noButton =
+                GUIUtils.createButton(app.getAssetManager(), this.guiFont,
+                        app.getContext().getTouchInput() != null, "no",
+                        "No");
 
         this.gui.attachChild(this.introCont);
 
@@ -420,6 +436,12 @@ public class CalibrateInputScreen extends BaseAppState
                 case "close":
                     this.getApplication().stop();
                     break;
+                case "yes":
+                    this.clearUnused();
+                    break;
+                case "no":
+                    this.recordFile();
+                    break;
                 }
             }
         }
@@ -626,8 +648,32 @@ public class CalibrateInputScreen extends BaseAppState
         }
         else
         {
-            this.recordFile();
+            this.promptClearUnused();
         }
+    }
+
+    private void promptClearUnused()
+    {
+        this.currentStage = null;
+        this.mainOptions.removeFromParent();
+        this.gamepad.removeFromParent();
+
+        this.introCont.detachAllChildren();
+        this.introCont.attachChild(this.guiFont.createLabel(
+                "Do you wish to set all buttons and axes not used to not " +
+                        "trigger?\nThis has the benefit of ensuring unused " +
+                        "buttons don't interfere with\n" +
+                        "anything else."));
+        this.introCont.attachChild(this.yesButton);
+        this.introCont.attachChild(this.noButton);
+        this.gui.attachChild(this.introCont);
+        this.resize();
+    }
+
+    private void clearUnused()
+    {
+        this.clear = true;
+        this.recordFile();
     }
 
     /**
@@ -639,14 +685,12 @@ public class CalibrateInputScreen extends BaseAppState
         /*
          * Enable this in JME 3.4.
          */
-        boolean perComponentEnabled = false;
+        boolean perComponentEnabled = true;
         JoystickAxis axis;
         JoystickButton button;
         Properties props = new Properties();
 
-        this.currentStage = null;
-        this.mainOptions.removeFromParent();
-        this.gamepad.removeFromParent();
+        this.introCont.removeFromParent();
 
         if (!calibrationFile.exists())
         {
@@ -681,13 +725,16 @@ public class CalibrateInputScreen extends BaseAppState
         }
         finally
         {
+            ArrayList<Object> elements = new ArrayList<>();
+            elements.addAll(this.joystick.getAxes());
+            elements.addAll(this.joystick.getButtons());
             for (Map.Entry<String, Object> calibrationEntry : this.maps
                     .entrySet())
             {
                 if (calibrationEntry.getValue() instanceof JoystickButton)
                 {
                     button = (JoystickButton) calibrationEntry.getValue();
-                    if (!button.getName().equals(calibrationEntry.getKey()))
+                    if (!button.getName().equals(calibrationEntry.getKey()) || clear)
                     {
                         props.put((perComponentEnabled ? "button." : "") +
                                 this.joystick.getName() + "." +
@@ -697,11 +744,32 @@ public class CalibrateInputScreen extends BaseAppState
                 else if (calibrationEntry.getValue() instanceof JoystickAxis)
                 {
                     axis = (JoystickAxis) calibrationEntry.getValue();
-                    if (!axis.getName().equals(calibrationEntry.getKey()))
+                    if (!axis.getName().equals(calibrationEntry.getKey()) || clear)
                     {
                         props.put((perComponentEnabled ? "axis." : "") +
                                         this.joystick.getName() + "." + axis.getName(),
                                 calibrationEntry.getKey());
+                    }
+                }
+                elements.remove(calibrationEntry.getValue());
+            }
+            if (this.clear)
+            {
+                for (Object element : elements)
+                {
+                    if (element instanceof JoystickButton)
+                    {
+                        button = (JoystickButton) element;
+                        props.put((perComponentEnabled ? "button." : "") +
+                                this.joystick.getName() + "." +
+                                button.getName(), "null");
+                    }
+                    else if (element instanceof JoystickAxis)
+                    {
+                        axis = (JoystickAxis) element;
+                        props.put((perComponentEnabled ? "axis." : "") +
+                                        this.joystick.getName() + "." + axis.getName(),
+                                "null");
                     }
                 }
             }
