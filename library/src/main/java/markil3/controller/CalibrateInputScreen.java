@@ -702,7 +702,7 @@ public class CalibrateInputScreen extends BaseAppState
         /*
          * Enable this in JME 3.4.
          */
-        boolean perComponentEnabled = false;
+        boolean perComponentEnabled = true;
         JoystickAxis axis;
         JoystickButton button;
         float[] range;
@@ -870,19 +870,19 @@ public class CalibrateInputScreen extends BaseAppState
         if (this.joystick != null)
         {
             // TODO - Use getRawValue() in 3.4
-            if (evt.getValue() != 0 && Math.abs(evt.getValue()) > 0.5 &&
+            if (evt.getRawValue() != 0 && Math.abs(evt.getRawValue()) > 0.5 &&
                     (defaultValue == null || Math.abs(
                             defaultValue[0] -
-                                    evt.getValue()) > 0.001F))
+                                    evt.getRawValue()) > 0.001F))
             {
                 if (this.focusedJoyElement != evt.getAxis() ||
-                        this.focusValue != evt.getValue())
+                        this.focusValue != evt.getRawValue())
                 {
                     this.focusedJoyElement = evt.getAxis();
                     this.timeHeld = 0;
-                    this.focusValue = evt.getValue();
+                    this.focusValue = evt.getRawValue();
                     this.greatestVal = 0;
-                    this.smallestVal = evt.getValue();
+                    this.smallestVal = evt.getRawValue();
                     this.currentElement.setText(
                             (this.focusValue > 0 ? "+ " : "- ") +
                                     evt.getAxis().getName());
@@ -892,13 +892,13 @@ public class CalibrateInputScreen extends BaseAppState
                 }
                 else
                 {
-                    if (Math.abs(evt.getValue()) < Math.abs(this.smallestVal))
+                    if (Math.abs(evt.getRawValue()) < Math.abs(this.smallestVal))
                     {
-                        this.smallestVal = evt.getValue();
+                        this.smallestVal = evt.getRawValue();
                     }
-                    else if (Math.abs(evt.getValue()) > Math.abs(this.greatestVal))
+                    else if (Math.abs(evt.getRawValue()) > Math.abs(this.greatestVal))
                     {
-                        this.greatestVal = evt.getValue();
+                        this.greatestVal = evt.getRawValue();
                     }
                 }
             }
@@ -916,18 +916,18 @@ public class CalibrateInputScreen extends BaseAppState
         }
         else
         {
-            defaultValue = new float[]{evt.getValue(), 0, 0};
+            defaultValue = new float[]{evt.getRawValue(), 0, 0};
             this.defaultValues.put(evt.getAxis(), defaultValue);
         }
 //        if (defaultValue != null)
 //        {
-//            if (evt.getValue() < defaultValue[1])
+//            if (evt.getRawValue() < defaultValue[1])
 //            {
-//                defaultValue[1] = evt.getValue();
+//                defaultValue[1] = evt.getRawValue();
 //            }
-//            if (evt.getValue() > defaultValue[2])
+//            if (evt.getRawValue() > defaultValue[2])
 //            {
-//                defaultValue[2] = evt.getValue();
+//                defaultValue[2] = evt.getRawValue();
 //            }
 //        }
     }
