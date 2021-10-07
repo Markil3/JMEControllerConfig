@@ -9,7 +9,7 @@
  */
 
 ext {
-    jme3 = [version: '3.3.2-stable', g: 'org.jmonkeyengine']
+    jme3 = [version: '3.4.0-stable', g: 'org.jmonkeyengine']
     versionNumber = 2
 }
 version = "1.2"
