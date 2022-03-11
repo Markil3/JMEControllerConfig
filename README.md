@@ -5,6 +5,19 @@ There are two screens included in the library. The JoystickPreviewScreen state w
 
 The CalibrateInputScreen state will show a series of prompts that will guide users through the process of creating a controller remapping properties file compatible with com.jme3.input.JoystickCompatibilityMappings.
 
+# A message on the future of this project.
+*Hello, everyone.*
+
+*I’ve recently taken on a new job, and, due to the demands of a full-time developer job, I will no longer be able to maintain this project. I’ve had a lot of fun with it, but continuing it for the future is simply unfeasible.*
+
+*With that said, this application is fully open-source, and anyone is available to freely use it, modify it, or maintain their own copy. The only thing I require is that the copyright and license is preserved. I hope that you find this useful.*
+
+*I am archiving the repository at the moment. However, if anyone wishes to take over development, I will be willing to transfer full ownership of the project, copyright and all, to the new maintainer. If there is anyone who wishes to take ownership of this, message [markil3](https://hub.jmonkeyengine.org/u/markil3/summary) on the jmonkey forums and we can discuss it.*
+
+*Thank you all for a great year. May God bless you all,*
+
+*Markil 3*
+
 ## Getting started
 Download the [latest release build](https://github.com/Markil3/JMEControllerConfig/releases) and store it in your project's library folder. Point your build tool to use the library. Then, ensure that your jMonkey application's settings (com.jme3.system.AppSettings#setUseJoysticks) are set to enable joypad support After that, just attach the markil3.controller.JoystickPreviewScreen to the jMonkey applications state manager to display the gamepad information, or attach CalibrateInputScreen with a link to the output file to configure gamepads. Simply detach the state you used to remove the information.
 
